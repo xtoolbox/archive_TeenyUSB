@@ -45,6 +45,7 @@ local chs = {
 ["What is WCID ?"] = "什么是WCID免驱设备?",
 ["GenEp"] = "通用端点",
 ["Trans/Frame"] = "次每帧",
+["HID Report Tool"] = "报告描述符工具",
 __name__ = "CHS",
 __context__ = {},
 }

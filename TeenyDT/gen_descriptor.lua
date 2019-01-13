@@ -11,17 +11,23 @@ local function usage()
     print("    -maxmem - max valid memory for USB core")
 end
 
-
+function input_name()
+    local name = "<NONE>"
+    string.gsub(arg[1], "([%w_%.]+)$", function(n)
+        name = n
+    end)
+    return name
+end
 
 function outputCode(fname, script, content, isBody)
     isBody = isBody or (fname:sub(-1,-1) == 'c')
     local f = io.open(fname, "w+")
     assert(f, "Fail to open " .. fname .. " to write")
-    local defname = "_" .. fname:upper() .. "_"
-    defname = string.gsub(defname, '[%./\\]', '_')
     while fname:find('[/\\]') do
         fname = fname:sub( fname:find('[/\\]') + 1 )
     end
+    defname = "_" .. fname:upper() .. "_"
+    defname = string.gsub(defname, '[%./\\]', '_')
     f:write([[
 /*
  * Name   :  ]]..fname.."\n"..[[
@@ -33,7 +39,7 @@ function outputCode(fname, script, content, isBody)
  */
 
 /*
-  Input source name:  ]]..arg[1]..[[
+  Input source name:  ]]..input_name()..[[
   
   Content type is lua script:
   ------------- lua script begin ------------
@@ -49,6 +55,7 @@ function outputCode(fname, script, content, isBody)
 #ifndef ]]..defname..[[
 
 #define ]]..defname..[[
+
 // include this file in "usbd_conf.h"
 
 // forward declare the tusb_descriptors struct

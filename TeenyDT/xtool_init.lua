@@ -3,7 +3,7 @@
 ]]
 require("usb_hid")
 require("usb_cdc_acm")
-require("gen_decriptor")
+require("gen_descriptor")
 require("driver")
 local deviceList = require("device_list")
 
@@ -124,7 +124,13 @@ function IfView:__init(p, name)
             self.removeCallback(self)
         end
     end
-    self.layout.contentsMargins = QMargins(0,0,0,0)
+    self.layout.contentsMargins = QMargins(2,2,2,2)
+    self.objectName = "ItfFrame"
+    self.styleSheet = [[
+    QFrame#ItfFrame{
+        border: 1px solid black;
+    }
+    ]]
 end
 
 function IfView:initIf(iInterface, removeCallback)
@@ -203,8 +209,11 @@ function HIDView:__init(p)
     self.epWrite:setEp(e, "Interrupt", 64, 1)
     self.layout:addWidget(self.epRead)
     self.layout:addWidget(self.epWrite)
+    self.reportDT = QLabel([[<a href="https://www.usb.org/document-library/hid-descriptor-tool">]]..tr("HID Report Tool")..[[</a>]])
+        { openExternalLinks = true }
+    
     self.layout:addLayout(QHBoxLayout{
-        QLabel(tr("    Report desc")), self.rptType, QLabel("Size:"), self.ioSize, self.btnEditRpt
+        QLabel(tr("    Report desc")), self.rptType, QLabel("Size:"), self.ioSize, self.btnEditRpt, self.reportDT
     })
     self.removeEp = function()
         self.freeEp(self.epRead:getAddr() & 0x7f)
