@@ -1,5 +1,4 @@
-
-
+-- usbview.lua
 local fmt = string.format
 class "USBDataView"(QFrame)
 function USBDataView:__init()
