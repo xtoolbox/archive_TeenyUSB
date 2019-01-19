@@ -139,7 +139,7 @@ Device {
 [xtoolbox_intro]: https://github.com/xtoolbox/Introduction
 [desc_demo]: ../usb_stack/demo/custom_bulk/custom_bulk_desc.lua
 [what_is_wcid]: https://github.com/xtoolbox/teenyusb/wiki/WCID-Device
-[tiny_usb_desc_demo]: ../usb_stack/demo/custom_bulk/tiny_usb_desc.c
-[tiny_usb_init_demo]: ../usb_stack/demo/custom_bulk/tiny_usb_init.h
+[tiny_usb_desc_demo]: ../usb_stack/demo/custom_bulk/teeny_usb_desc.c
+[tiny_usb_init_demo]: ../usb_stack/demo/custom_bulk/teeny_usb_init.h
 [device_list]: device_list.lua
 [libwdi_proj]:https://github.com/pbatard/libwdi
