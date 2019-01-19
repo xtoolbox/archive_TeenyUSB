@@ -73,7 +73,19 @@ usage:
     -maxep  - max end point number
     -maxmem - max valid memory for USB core
 ```
-inFile是USB设备配置文件，用来生成描述符的C语言代码，其格式见下面说明。maxep为USB模块的最大端点号，描述符中大于此号码的端点将会被忽略。maxmem为USB模块的内存大小，如果端点分配的内存大于此值，将会报错。执行后会在inFile相同目录下生成tiny_usb_desc.c和tiny_usb_init.h文件。tiny_usb_desc.c是设备描述符文件，包含USB设备的各种描述符。tiny_usb_init.h是端点定义文件，对于STM32F1xx和STM32F0xx芯片，会根据描述符中的端点信息，生成相应的端点初始化代码。查看生成的代码示例：[tiny_usb_desc.c][tiny_usb_desc_demo], [tiny_usb_init.h][tiny_usb_init_demo]
+inFile是USB设备配置文件，用来生成描述符的C语言代码，其格式见下面说明。
+
+maxep为USB模块的最大端点号，描述符中大于此号码的端点将会被忽略。
+
+maxmem为USB模块的内存大小，如果端点分配的内存大于此值，将会报错。
+
+执行后会在inFile相同目录下生成teeny_usb_desc.c和teeny_usb_init.h文件。
+
+teeny_usb_desc.c是设备描述符文件，包含USB设备的各种描述符。
+
+teeny_usb_init.h是端点定义文件，根据描述符中的端点信息，生成相应的端点初始化代码。
+
+查看生成的代码示例：[teeny_usb_desc.c][teeny_usb_desc_demo], [teeny_usb_init.h][teeny_usb_init_demo]
 
 ### 配置文件格式
 
@@ -139,7 +151,7 @@ Device {
 [xtoolbox_intro]: https://github.com/xtoolbox/Introduction
 [desc_demo]: ../usb_stack/demo/custom_bulk/custom_bulk_desc.lua
 [what_is_wcid]: https://github.com/xtoolbox/teenyusb/wiki/WCID-Device
-[tiny_usb_desc_demo]: ../usb_stack/demo/custom_bulk/teeny_usb_desc.c
-[tiny_usb_init_demo]: ../usb_stack/demo/custom_bulk/teeny_usb_init.h
+[teeny_usb_desc_demo]: ../usb_stack/demo/custom_bulk/teeny_usb_desc.c
+[teeny_usb_init_demo]: ../usb_stack/demo/custom_bulk/teeny_usb_init.h
 [device_list]: device_list.lua
 [libwdi_proj]:https://github.com/pbatard/libwdi
