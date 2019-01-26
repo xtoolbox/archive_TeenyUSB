@@ -6,12 +6,12 @@ function USBDataView:__init()
     self.tabInput = QTabWidget()
     self.tabOutput = QTabWidget()
     
-    
     self.layout = QVBoxLayout{
-        QLabel("Input end points"),
-        self.tabInput,
         QLabel("Output end points"),
         self.tabOutput,
+        QLabel("Input end points"),
+        self.tabInput,
+        
     }
 end
 
