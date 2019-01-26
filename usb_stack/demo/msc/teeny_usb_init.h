@@ -1,7 +1,7 @@
 /*
  * Name   :  teeny_usb_init.h
  * Author :  admin@xtoolbox.org
- * Date   :  2019-01-13 17:35:22
+ * Date   :  2019-01-26 21:55:12
  * Desc   :  This file is auto generate by the teeny_usb script tool
  *           Visit https://github.com/xtoolbox/TeenyUSB for more info
  */
@@ -71,14 +71,23 @@ typedef struct _tusb_descriptors tusb_descriptors;
 #define MSC_OTG_CONTROL_EP_NUM                              (1)
 #define MSC_OTG_OUT_EP_NUM                                  (1)
 // RX FIFO size / 4 > (CONTROL_EP_NUM * 5 + 8) +  (MAX_OUT_SIZE / 4 + 1) + (OUT_EP_NUM*2) + 1 = 33
-#define MSC_OTG_RX_FIFO_SIZE                                (256)
-#define MSC_OTG_RX_FIFO_ADDR                                (0)
+#define MSC_OTG_RX_FIFO_SIZE_FS                             (256)
+#define MSC_OTG_RX_FIFO_ADDR_FS                             (0)
 // Sum of IN ep max packet size is 128
-// Remain Fifo size is 768 in bytes, Rx Used 256 bytes 
-#define MSC_EP0_TX_FIFO_ADDR                                (256)
-#define MSC_EP0_TX_FIFO_SIZE                                (MSC_EP0_TX_SIZE * 6)
-#define MSC_EP1_TX_FIFO_ADDR                                (640)
-#define MSC_EP1_TX_FIFO_SIZE                                (MSC_EP1_TX_SIZE * 6)
+// Remain Fifo size is 1024 in bytes, Rx Used 256 bytes 
+#define MSC_EP0_TX_FIFO_ADDR_FS                             (256)
+#define MSC_EP0_TX_FIFO_SIZE_FS                             (MSC_EP0_TX_SIZE * 7)
+#define MSC_EP1_TX_FIFO_ADDR_FS                             (704)
+#define MSC_EP1_TX_FIFO_SIZE_FS                             (MSC_EP1_TX_SIZE * 7)
+// RX FIFO size / 4 > (CONTROL_EP_NUM * 5 + 8) +  (MAX_OUT_SIZE / 4 + 1) + (OUT_EP_NUM*2) + 1 = 33
+#define MSC_OTG_RX_FIFO_SIZE_HS                             (512)
+#define MSC_OTG_RX_FIFO_ADDR_HS                             (0)
+// Sum of IN ep max packet size is 128
+// Remain Fifo size is 3584 in bytes, Rx Used 512 bytes 
+#define MSC_EP0_TX_FIFO_ADDR_HS                             (512)
+#define MSC_EP0_TX_FIFO_SIZE_HS                             (MSC_EP0_TX_SIZE * 7)
+#define MSC_EP1_TX_FIFO_ADDR_HS                             (960)
+#define MSC_EP1_TX_FIFO_SIZE_HS                             (MSC_EP1_TX_SIZE * 7)
 
 // EndPoint max packed sizes
 extern const uint8_t MSC_txEpMaxSize[];
@@ -109,15 +118,28 @@ const uint8_t MSC_rxEpMaxSize[] = \
 // EndPoints init function for USB OTG core
 #define MSC_TUSB_INIT_EP_OTG(dev) \
   do{\
-    SET_RX_FIFO(dev, MSC_OTG_RX_FIFO_ADDR, MSC_OTG_RX_FIFO_SIZE);  \
+  if(GetUSB(dev) == USB_OTG_FS) { \
+    SET_RX_FIFO(dev, MSC_OTG_RX_FIFO_ADDR_FS, MSC_OTG_RX_FIFO_SIZE_FS);  \
     /* Init ep0 */ \
     INIT_EP_Tx(dev, PCD_ENDP0, MSC_EP0_TYPE, MSC_EP0_TX_SIZE);  \
-    SET_TX_FIFO(dev, PCD_ENDP0, MSC_EP0_TX_FIFO_ADDR, MSC_EP0_TX_FIFO_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP0, MSC_EP0_TX_FIFO_ADDR_FS, MSC_EP0_TX_FIFO_SIZE_FS);  \
     INIT_EP_Rx(dev, PCD_ENDP0, MSC_EP0_TYPE, MSC_EP0_RX_SIZE);  \
     /* Init ep1 */ \
     INIT_EP_Tx(dev, PCD_ENDP1, MSC_EP1_TYPE, MSC_EP1_TX_SIZE);  \
-    SET_TX_FIFO(dev, PCD_ENDP1, MSC_EP1_TX_FIFO_ADDR, MSC_EP1_TX_FIFO_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP1, MSC_EP1_TX_FIFO_ADDR_FS, MSC_EP1_TX_FIFO_SIZE_FS);  \
     INIT_EP_Rx(dev, PCD_ENDP1, MSC_EP1_TYPE, MSC_EP1_RX_SIZE);  \
+  } \
+  if(GetUSB(dev) == USB_OTG_HS) { \
+    SET_RX_FIFO(dev, MSC_OTG_RX_FIFO_ADDR_HS, MSC_OTG_RX_FIFO_SIZE_HS);  \
+    /* Init ep0 */ \
+    INIT_EP_Tx(dev, PCD_ENDP0, MSC_EP0_TYPE, MSC_EP0_TX_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP0, MSC_EP0_TX_FIFO_ADDR_HS, MSC_EP0_TX_FIFO_SIZE_HS);  \
+    INIT_EP_Rx(dev, PCD_ENDP0, MSC_EP0_TYPE, MSC_EP0_RX_SIZE);  \
+    /* Init ep1 */ \
+    INIT_EP_Tx(dev, PCD_ENDP1, MSC_EP1_TYPE, MSC_EP1_TX_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP1, MSC_EP1_TX_FIFO_ADDR_HS, MSC_EP1_TX_FIFO_SIZE_HS);  \
+    INIT_EP_Rx(dev, PCD_ENDP1, MSC_EP1_TYPE, MSC_EP1_RX_SIZE);  \
+  } \
   }while(0)
 
 

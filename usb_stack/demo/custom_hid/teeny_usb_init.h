@@ -1,7 +1,7 @@
 /*
  * Name   :  teeny_usb_init.h
  * Author :  admin@xtoolbox.org
- * Date   :  2019-01-13 21:20:14
+ * Date   :  2019-01-26 21:55:41
  * Desc   :  This file is auto generate by the teeny_usb script tool
  *           Visit https://github.com/xtoolbox/TeenyUSB for more info
  */
@@ -36,54 +36,10 @@ return Device {
   0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
   0xC0               // End Collection
 ]]),
+            -- report = HID_InOut(64),
         },
    }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
---[==[
-USB_HID{
-    report = {
-    0x06, 0x00, 0xFF, 0x09, 0x01 ,0xA1, 0x01, 0x09, 
-    0x02, 0x15, 0x00, 0x25, 0xFF, 0x75, 0x08, 0x95,
-    0x40, 0x81, 0x02, 0x09, 0x03, 0x91, 0x02, 0xC0
-    }
-}
-            --[=[
-            report = HID_BuildReport([[
-  // report descriptor for general input/output
-  0x06, 0x00, 0xFF,  // Usage Page (Vendor Defined 0xFF00)
-  0x09, 0x01,        // Usage (0x01)
-  0xA1, 0x01,        // Collection (Application)
-  0x09, 0x02,        //   Usage (0x02)
-  0x15, 0x00,        //   Logical Minimum (0)
-  0x25, 0xFF,        //   Logical Maximum (255)
-  0x75, 0x08,        //   Report Size (8)
-  0x95, 0x40,        //   Report Count 64
-  0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-  0x09, 0x03,        //   Usage (0x03)
-  0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
-  0xC0               // End Collection
-]]),]=]
-report = {0x01,0x02,0x03,0x04},
--- report = HID_InOut(64),
-]==]  
+}  
 
   ------------- lua script end   ------------
  */
@@ -128,14 +84,23 @@ typedef struct _tusb_descriptors tusb_descriptors;
 #define HID_OTG_CONTROL_EP_NUM                              (1)
 #define HID_OTG_OUT_EP_NUM                                  (1)
 // RX FIFO size / 4 > (CONTROL_EP_NUM * 5 + 8) +  (MAX_OUT_SIZE / 4 + 1) + (OUT_EP_NUM*2) + 1 = 33
-#define HID_OTG_RX_FIFO_SIZE                                (256)
-#define HID_OTG_RX_FIFO_ADDR                                (0)
+#define HID_OTG_RX_FIFO_SIZE_FS                             (256)
+#define HID_OTG_RX_FIFO_ADDR_FS                             (0)
 // Sum of IN ep max packet size is 128
-// Remain Fifo size is 768 in bytes, Rx Used 256 bytes 
-#define HID_EP0_TX_FIFO_ADDR                                (256)
-#define HID_EP0_TX_FIFO_SIZE                                (HID_EP0_TX_SIZE * 6)
-#define HID_EP1_TX_FIFO_ADDR                                (640)
-#define HID_EP1_TX_FIFO_SIZE                                (HID_EP1_TX_SIZE * 6)
+// Remain Fifo size is 1024 in bytes, Rx Used 256 bytes 
+#define HID_EP0_TX_FIFO_ADDR_FS                             (256)
+#define HID_EP0_TX_FIFO_SIZE_FS                             (HID_EP0_TX_SIZE * 7)
+#define HID_EP1_TX_FIFO_ADDR_FS                             (704)
+#define HID_EP1_TX_FIFO_SIZE_FS                             (HID_EP1_TX_SIZE * 7)
+// RX FIFO size / 4 > (CONTROL_EP_NUM * 5 + 8) +  (MAX_OUT_SIZE / 4 + 1) + (OUT_EP_NUM*2) + 1 = 33
+#define HID_OTG_RX_FIFO_SIZE_HS                             (512)
+#define HID_OTG_RX_FIFO_ADDR_HS                             (0)
+// Sum of IN ep max packet size is 128
+// Remain Fifo size is 3584 in bytes, Rx Used 512 bytes 
+#define HID_EP0_TX_FIFO_ADDR_HS                             (512)
+#define HID_EP0_TX_FIFO_SIZE_HS                             (HID_EP0_TX_SIZE * 7)
+#define HID_EP1_TX_FIFO_ADDR_HS                             (960)
+#define HID_EP1_TX_FIFO_SIZE_HS                             (HID_EP1_TX_SIZE * 7)
 
 // EndPoint max packed sizes
 extern const uint8_t HID_txEpMaxSize[];
@@ -166,15 +131,28 @@ const uint8_t HID_rxEpMaxSize[] = \
 // EndPoints init function for USB OTG core
 #define HID_TUSB_INIT_EP_OTG(dev) \
   do{\
-    SET_RX_FIFO(dev, HID_OTG_RX_FIFO_ADDR, HID_OTG_RX_FIFO_SIZE);  \
+  if(GetUSB(dev) == USB_OTG_FS) { \
+    SET_RX_FIFO(dev, HID_OTG_RX_FIFO_ADDR_FS, HID_OTG_RX_FIFO_SIZE_FS);  \
     /* Init ep0 */ \
     INIT_EP_Tx(dev, PCD_ENDP0, HID_EP0_TYPE, HID_EP0_TX_SIZE);  \
-    SET_TX_FIFO(dev, PCD_ENDP0, HID_EP0_TX_FIFO_ADDR, HID_EP0_TX_FIFO_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP0, HID_EP0_TX_FIFO_ADDR_FS, HID_EP0_TX_FIFO_SIZE_FS);  \
     INIT_EP_Rx(dev, PCD_ENDP0, HID_EP0_TYPE, HID_EP0_RX_SIZE);  \
     /* Init ep1 */ \
     INIT_EP_Tx(dev, PCD_ENDP1, HID_EP1_TYPE, HID_EP1_TX_SIZE);  \
-    SET_TX_FIFO(dev, PCD_ENDP1, HID_EP1_TX_FIFO_ADDR, HID_EP1_TX_FIFO_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP1, HID_EP1_TX_FIFO_ADDR_FS, HID_EP1_TX_FIFO_SIZE_FS);  \
     INIT_EP_Rx(dev, PCD_ENDP1, HID_EP1_TYPE, HID_EP1_RX_SIZE);  \
+  } \
+  if(GetUSB(dev) == USB_OTG_HS) { \
+    SET_RX_FIFO(dev, HID_OTG_RX_FIFO_ADDR_HS, HID_OTG_RX_FIFO_SIZE_HS);  \
+    /* Init ep0 */ \
+    INIT_EP_Tx(dev, PCD_ENDP0, HID_EP0_TYPE, HID_EP0_TX_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP0, HID_EP0_TX_FIFO_ADDR_HS, HID_EP0_TX_FIFO_SIZE_HS);  \
+    INIT_EP_Rx(dev, PCD_ENDP0, HID_EP0_TYPE, HID_EP0_RX_SIZE);  \
+    /* Init ep1 */ \
+    INIT_EP_Tx(dev, PCD_ENDP1, HID_EP1_TYPE, HID_EP1_TX_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP1, HID_EP1_TX_FIFO_ADDR_HS, HID_EP1_TX_FIFO_SIZE_HS);  \
+    INIT_EP_Rx(dev, PCD_ENDP1, HID_EP1_TYPE, HID_EP1_RX_SIZE);  \
+  } \
   }while(0)
 
 

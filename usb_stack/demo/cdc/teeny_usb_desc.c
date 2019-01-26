@@ -1,7 +1,7 @@
 /*
  * Name   :  teeny_usb_desc.c
  * Author :  admin@xtoolbox.org
- * Date   :  2019-01-13 16:01:13
+ * Date   :  2019-01-26 21:55:25
  * Desc   :  This file is auto generate by the teeny_usb script tool
  *           Visit https://github.com/xtoolbox/TeenyUSB for more info
  */

@@ -1,7 +1,7 @@
 /*
  * Name   :  teeny_usb_init.h
  * Author :  admin@xtoolbox.org
- * Date   :  2019-01-13 17:19:18
+ * Date   :  2019-01-26 21:55:31
  * Desc   :  This file is auto generate by the teeny_usb script tool
  *           Visit https://github.com/xtoolbox/TeenyUSB for more info
  */
@@ -117,22 +117,39 @@ typedef struct _tusb_descriptors tusb_descriptors;
 #define CDC5_OTG_CONTROL_EP_NUM                             (1)
 #define CDC5_OTG_OUT_EP_NUM                                 (5)
 // RX FIFO size / 4 > (CONTROL_EP_NUM * 5 + 8) +  (MAX_OUT_SIZE / 4 + 1) + (OUT_EP_NUM*2) + 1 = 41
-#define CDC5_OTG_RX_FIFO_SIZE                               (256)
-#define CDC5_OTG_RX_FIFO_ADDR                               (0)
+#define CDC5_OTG_RX_FIFO_SIZE_FS                            (256)
+#define CDC5_OTG_RX_FIFO_ADDR_FS                            (0)
 // Sum of IN ep max packet size is 224
-// Remain Fifo size is 768 in bytes, Rx Used 256 bytes 
-#define CDC5_EP0_TX_FIFO_ADDR                               (256)
-#define CDC5_EP0_TX_FIFO_SIZE                               (CDC5_EP0_TX_SIZE * 3)
-#define CDC5_EP1_TX_FIFO_ADDR                               (448)
-#define CDC5_EP1_TX_FIFO_SIZE                               (CDC5_EP1_TX_SIZE * 3)
-#define CDC5_EP2_TX_FIFO_ADDR                               (640)
-#define CDC5_EP2_TX_FIFO_SIZE                               (CDC5_EP2_TX_SIZE * 3)
-#define CDC5_EP3_TX_FIFO_ADDR                               (736)
-#define CDC5_EP3_TX_FIFO_SIZE                               (CDC5_EP3_TX_SIZE * 3)
-#define CDC5_EP4_TX_FIFO_ADDR                               (832)
-#define CDC5_EP4_TX_FIFO_SIZE                               (CDC5_EP4_TX_SIZE * 3)
-#define CDC5_EP5_TX_FIFO_ADDR                               (880)
-#define CDC5_EP5_TX_FIFO_SIZE                               (CDC5_EP5_TX_SIZE * 3)
+// Remain Fifo size is 1024 in bytes, Rx Used 256 bytes 
+#define CDC5_EP0_TX_FIFO_ADDR_FS                            (256)
+#define CDC5_EP0_TX_FIFO_SIZE_FS                            (CDC5_EP0_TX_SIZE * 4)
+#define CDC5_EP1_TX_FIFO_ADDR_FS                            (512)
+#define CDC5_EP1_TX_FIFO_SIZE_FS                            (CDC5_EP1_TX_SIZE * 4)
+#define CDC5_EP2_TX_FIFO_ADDR_FS                            (768)
+#define CDC5_EP2_TX_FIFO_SIZE_FS                            (CDC5_EP2_TX_SIZE * 4)
+#define CDC5_EP3_TX_FIFO_ADDR_FS                            (896)
+#define CDC5_EP3_TX_FIFO_SIZE_FS                            (CDC5_EP3_TX_SIZE * 4)
+#define CDC5_EP4_TX_FIFO_ADDR_FS                            (1024)
+#define CDC5_EP4_TX_FIFO_SIZE_FS                            (CDC5_EP4_TX_SIZE * 4)
+#define CDC5_EP5_TX_FIFO_ADDR_FS                            (1088)
+#define CDC5_EP5_TX_FIFO_SIZE_FS                            (CDC5_EP5_TX_SIZE * 4)
+// RX FIFO size / 4 > (CONTROL_EP_NUM * 5 + 8) +  (MAX_OUT_SIZE / 4 + 1) + (OUT_EP_NUM*2) + 1 = 41
+#define CDC5_OTG_RX_FIFO_SIZE_HS                            (512)
+#define CDC5_OTG_RX_FIFO_ADDR_HS                            (0)
+// Sum of IN ep max packet size is 224
+// Remain Fifo size is 3584 in bytes, Rx Used 512 bytes 
+#define CDC5_EP0_TX_FIFO_ADDR_HS                            (512)
+#define CDC5_EP0_TX_FIFO_SIZE_HS                            (CDC5_EP0_TX_SIZE * 7)
+#define CDC5_EP1_TX_FIFO_ADDR_HS                            (960)
+#define CDC5_EP1_TX_FIFO_SIZE_HS                            (CDC5_EP1_TX_SIZE * 7)
+#define CDC5_EP2_TX_FIFO_ADDR_HS                            (1408)
+#define CDC5_EP2_TX_FIFO_SIZE_HS                            (CDC5_EP2_TX_SIZE * 7)
+#define CDC5_EP3_TX_FIFO_ADDR_HS                            (1632)
+#define CDC5_EP3_TX_FIFO_SIZE_HS                            (CDC5_EP3_TX_SIZE * 7)
+#define CDC5_EP4_TX_FIFO_ADDR_HS                            (1856)
+#define CDC5_EP4_TX_FIFO_SIZE_HS                            (CDC5_EP4_TX_SIZE * 7)
+#define CDC5_EP5_TX_FIFO_ADDR_HS                            (1968)
+#define CDC5_EP5_TX_FIFO_SIZE_HS                            (CDC5_EP5_TX_SIZE * 7)
 
 // EndPoint max packed sizes
 extern const uint8_t CDC5_txEpMaxSize[];
@@ -183,31 +200,60 @@ const uint8_t CDC5_rxEpMaxSize[] = \
 // EndPoints init function for USB OTG core
 #define CDC5_TUSB_INIT_EP_OTG(dev) \
   do{\
-    SET_RX_FIFO(dev, CDC5_OTG_RX_FIFO_ADDR, CDC5_OTG_RX_FIFO_SIZE);  \
+  if(GetUSB(dev) == USB_OTG_FS) { \
+    SET_RX_FIFO(dev, CDC5_OTG_RX_FIFO_ADDR_FS, CDC5_OTG_RX_FIFO_SIZE_FS);  \
     /* Init ep0 */ \
     INIT_EP_Tx(dev, PCD_ENDP0, CDC5_EP0_TYPE, CDC5_EP0_TX_SIZE);  \
-    SET_TX_FIFO(dev, PCD_ENDP0, CDC5_EP0_TX_FIFO_ADDR, CDC5_EP0_TX_FIFO_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP0, CDC5_EP0_TX_FIFO_ADDR_FS, CDC5_EP0_TX_FIFO_SIZE_FS);  \
     INIT_EP_Rx(dev, PCD_ENDP0, CDC5_EP0_TYPE, CDC5_EP0_RX_SIZE);  \
     /* Init ep1 */ \
     INIT_EP_Tx(dev, PCD_ENDP1, CDC5_EP1_TYPE, CDC5_EP1_TX_SIZE);  \
-    SET_TX_FIFO(dev, PCD_ENDP1, CDC5_EP1_TX_FIFO_ADDR, CDC5_EP1_TX_FIFO_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP1, CDC5_EP1_TX_FIFO_ADDR_FS, CDC5_EP1_TX_FIFO_SIZE_FS);  \
     INIT_EP_Rx(dev, PCD_ENDP1, CDC5_EP1_TYPE, CDC5_EP1_RX_SIZE);  \
     /* Init ep2 */ \
     INIT_EP_Tx(dev, PCD_ENDP2, CDC5_EP2_TYPE, CDC5_EP2_TX_SIZE);  \
-    SET_TX_FIFO(dev, PCD_ENDP2, CDC5_EP2_TX_FIFO_ADDR, CDC5_EP2_TX_FIFO_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP2, CDC5_EP2_TX_FIFO_ADDR_FS, CDC5_EP2_TX_FIFO_SIZE_FS);  \
     INIT_EP_Rx(dev, PCD_ENDP2, CDC5_EP2_TYPE, CDC5_EP2_RX_SIZE);  \
     /* Init ep3 */ \
     INIT_EP_Tx(dev, PCD_ENDP3, CDC5_EP3_TYPE, CDC5_EP3_TX_SIZE);  \
-    SET_TX_FIFO(dev, PCD_ENDP3, CDC5_EP3_TX_FIFO_ADDR, CDC5_EP3_TX_FIFO_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP3, CDC5_EP3_TX_FIFO_ADDR_FS, CDC5_EP3_TX_FIFO_SIZE_FS);  \
     INIT_EP_Rx(dev, PCD_ENDP3, CDC5_EP3_TYPE, CDC5_EP3_RX_SIZE);  \
     /* Init ep4 */ \
     INIT_EP_Tx(dev, PCD_ENDP4, CDC5_EP4_TYPE, CDC5_EP4_TX_SIZE);  \
-    SET_TX_FIFO(dev, PCD_ENDP4, CDC5_EP4_TX_FIFO_ADDR, CDC5_EP4_TX_FIFO_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP4, CDC5_EP4_TX_FIFO_ADDR_FS, CDC5_EP4_TX_FIFO_SIZE_FS);  \
     INIT_EP_Rx(dev, PCD_ENDP4, CDC5_EP4_TYPE, CDC5_EP4_RX_SIZE);  \
     /* Init ep5 */ \
     INIT_EP_Tx(dev, PCD_ENDP5, CDC5_EP5_TYPE, CDC5_EP5_TX_SIZE);  \
-    SET_TX_FIFO(dev, PCD_ENDP5, CDC5_EP5_TX_FIFO_ADDR, CDC5_EP5_TX_FIFO_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP5, CDC5_EP5_TX_FIFO_ADDR_FS, CDC5_EP5_TX_FIFO_SIZE_FS);  \
     INIT_EP_Rx(dev, PCD_ENDP5, CDC5_EP5_TYPE, CDC5_EP5_RX_SIZE);  \
+  } \
+  if(GetUSB(dev) == USB_OTG_HS) { \
+    SET_RX_FIFO(dev, CDC5_OTG_RX_FIFO_ADDR_HS, CDC5_OTG_RX_FIFO_SIZE_HS);  \
+    /* Init ep0 */ \
+    INIT_EP_Tx(dev, PCD_ENDP0, CDC5_EP0_TYPE, CDC5_EP0_TX_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP0, CDC5_EP0_TX_FIFO_ADDR_HS, CDC5_EP0_TX_FIFO_SIZE_HS);  \
+    INIT_EP_Rx(dev, PCD_ENDP0, CDC5_EP0_TYPE, CDC5_EP0_RX_SIZE);  \
+    /* Init ep1 */ \
+    INIT_EP_Tx(dev, PCD_ENDP1, CDC5_EP1_TYPE, CDC5_EP1_TX_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP1, CDC5_EP1_TX_FIFO_ADDR_HS, CDC5_EP1_TX_FIFO_SIZE_HS);  \
+    INIT_EP_Rx(dev, PCD_ENDP1, CDC5_EP1_TYPE, CDC5_EP1_RX_SIZE);  \
+    /* Init ep2 */ \
+    INIT_EP_Tx(dev, PCD_ENDP2, CDC5_EP2_TYPE, CDC5_EP2_TX_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP2, CDC5_EP2_TX_FIFO_ADDR_HS, CDC5_EP2_TX_FIFO_SIZE_HS);  \
+    INIT_EP_Rx(dev, PCD_ENDP2, CDC5_EP2_TYPE, CDC5_EP2_RX_SIZE);  \
+    /* Init ep3 */ \
+    INIT_EP_Tx(dev, PCD_ENDP3, CDC5_EP3_TYPE, CDC5_EP3_TX_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP3, CDC5_EP3_TX_FIFO_ADDR_HS, CDC5_EP3_TX_FIFO_SIZE_HS);  \
+    INIT_EP_Rx(dev, PCD_ENDP3, CDC5_EP3_TYPE, CDC5_EP3_RX_SIZE);  \
+    /* Init ep4 */ \
+    INIT_EP_Tx(dev, PCD_ENDP4, CDC5_EP4_TYPE, CDC5_EP4_TX_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP4, CDC5_EP4_TX_FIFO_ADDR_HS, CDC5_EP4_TX_FIFO_SIZE_HS);  \
+    INIT_EP_Rx(dev, PCD_ENDP4, CDC5_EP4_TYPE, CDC5_EP4_RX_SIZE);  \
+    /* Init ep5 */ \
+    INIT_EP_Tx(dev, PCD_ENDP5, CDC5_EP5_TYPE, CDC5_EP5_TX_SIZE);  \
+    SET_TX_FIFO(dev, PCD_ENDP5, CDC5_EP5_TX_FIFO_ADDR_HS, CDC5_EP5_TX_FIFO_SIZE_HS);  \
+    INIT_EP_Rx(dev, PCD_ENDP5, CDC5_EP5_TYPE, CDC5_EP5_RX_SIZE);  \
+  } \
   }while(0)
 
 
