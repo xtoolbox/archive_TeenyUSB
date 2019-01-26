@@ -35,6 +35,8 @@
 
 
 __ALIGN_BEGIN static uint8_t hid_cmd[64] __ALIGN_END;
+// make sure data is 32bit aligned
+__ALIGN_BEGIN static uint32_t cmd_buff __ALIGN_END;
 static uint8_t USBD_HID_IdleState;
 static uint8_t USBD_HID_Protocol;
 void HID_DataoutRequest(tusb_device_t* dev)
@@ -58,19 +60,21 @@ void tusb_class_request(tusb_device_t* dev, tusb_setup_packet* setup_req)
         USBD_HID_IdleState = HI_BYTE(setup_req->wValue);
         break;
       case HID_REQ_GET_IDLE:
-        tusb_send_data(dev, 0, &USBD_HID_IdleState, 1);
+        cmd_buff = USBD_HID_IdleState;
+        tusb_control_send(dev, &cmd_buff, 1);
         return;
       case HID_REQ_SET_PROTOCOL:
         USBD_HID_Protocol = LO_BYTE(setup_req->wValue);
         break;
       case HID_REQ_GET_PROTOCOL:
-        tusb_send_data(dev, 0, &USBD_HID_Protocol, 1);
+        cmd_buff = USBD_HID_Protocol;
+        tusb_control_send(dev,  &cmd_buff, 1);
         return;
       default:
         break;
     }
   }
-  tusb_send_data(dev, 0, 0, 0);
+  tusb_send_status(dev);
 }
 
 

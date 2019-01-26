@@ -58,7 +58,7 @@ void tusb_reconfig(tusb_device_t* dev)
   tusb_set_rx_valid(dev, RX_EP);
 }
 
-void delay_ms(uint32_t ms)
+void tusb_delay_ms(uint32_t ms)
 {
   uint32_t i,j;
   for(i=0;i<ms;++i)
@@ -67,13 +67,7 @@ void delay_ms(uint32_t ms)
 
 int main(void)
 {
-#if defined(STM32F723xx)
-  tusb_device_t* dev = tusb_get_device(1);
-#else
-  tusb_device_t* dev = tusb_get_device(0);
-#endif
-  tusb_close_device(dev);
-  delay_ms(100);
+  tusb_device_t* dev = tusb_get_device(TEST_APP_USB_CORE);
   tusb_open_device(dev);
   while(1){
     if(data_cnt){
@@ -81,7 +75,8 @@ int main(void)
       for(int i=0;i<data_cnt;i++){
         buf[i]++;
       }
-      tusb_send_data(dev, TX_EP, buf, data_cnt);
+      // HID data didn't need zero length packet
+      tusb_send_data(dev, TX_EP, buf, data_cnt, 0);
       data_cnt = 0; 
     }
   }

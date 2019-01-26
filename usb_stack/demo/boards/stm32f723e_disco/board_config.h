@@ -21,63 +21,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+ 
+#ifndef __BOARD_CONFIG_H__
+#define __BOARD_CONFIG_H__
 
-#include "teeny_usb.h"
-#include "string.h"
+/* Use external phy for high speed core */
+// #define  OTG_HS_EXTERNAL_PHY
 
-#define  TX_EP   PCD_ENDP1
-#define  RX_EP   PCD_ENDP2
+/* Use embedded phy for high speed core */
+#define  OTG_HS_EMBEDDED_PHY
 
-uint8_t buf[4096];
-__IO uint32_t data_cnt = 0;
+/* Use embedded phy for full speed core */ 
+#define  OTG_FS_EMBEDDED_PHY
 
-// if data tx done, set rx valid again
-void tusb_on_tx_done(tusb_device_t* dev, uint8_t EPn)
-{
-  if(EPn == TX_EP){
-    tusb_set_rx_valid(dev, RX_EP);
-  }
-}
+/* Enable DMA for High speed phy */
+#define  OTG_HS_ENABLE_DMA
 
-int tusb_on_rx_done(tusb_device_t* dev, uint8_t EPn, const void* data, uint16_t len)
-{
-  if(EPn == RX_EP){
-    data_cnt = len;
-    return len;
-  }
-  return 0;
-}
+/* Support for other speed config and device qualifier descriptor */
+#define  SUPPORT_OTHER_SPEED
 
-void tusb_reconfig(tusb_device_t* dev)
-{
-  // call the BULK device init macro
-  CDC_TUSB_INIT(dev);
-  // setup recv buffer for rx end point
-  tusb_set_recv_buffer(dev, RX_EP, buf, sizeof(buf));
-  // enable rx ep after buffer set
-  tusb_set_rx_valid(dev, RX_EP);
-}
+/* Setup descriptor buffer size, used for other speed config and DMA */
+#define  DESCRIPTOR_BUFFER_SIZE  256
 
-void tusb_delay_ms(uint32_t ms)
-{
-  uint32_t i,j;
-  for(i=0;i<ms;++i)
-    for(j=0;j<200;++j);
-}
+/* USB core ID used in test app, 0 - FS core, 1 - HS core */
+#define  USB_CORE_ID_FS             0
+#define  USB_CORE_ID_HS             1
 
-int main(void)
-{
-  tusb_device_t* dev = tusb_get_device(TEST_APP_USB_CORE);
-  tusb_open_device(dev);
-  while(1){
-    if(data_cnt){
-      // every data plus 1 and echo back
-      for(int i=0;i<data_cnt;i++){
-        buf[i]++;
-      }
-      tusb_send_data(dev, TX_EP, buf, data_cnt, TUSB_TXF_ZLP);
-      data_cnt = 0; 
-    }
-  }
-}
+#define  TEST_APP_USB_CORE          USB_CORE_ID_HS
+
+#define  HOST_PORT_POWER_ON() \
+do{\
+  __HAL_RCC_GPIOH_CLK_ENABLE();\
+  GPIOH->MODER &= ~(GPIO_MODER_MODER0 << (12*2));\
+  GPIOH->MODER |= (GPIO_MODER_MODER0_0 << (12*2));\
+  GPIOH->BSRR = GPIO_PIN_12;\
+}while(0)
+
+
+#endif
 

@@ -28,9 +28,10 @@ Below is supported develop boards:
 |------------------|----------------------|---------------|---------|-----------------|
 | stm32f0          | Custom board         | STM32F072C8T6 | No HSE  | USB FS          |
 | stm32f1          | Custom board         | STM32F103RET6 | 8 MHz   | USB FS          |
+| stm32f407_evk    | [Waveshare EVK407I][407]    | STM32F407IGT6 | 8 MHz   | OTG_FS/OTG_HS_ULPI  |
 | stm32f723e_disco | [stm32f723e discovery][723] | STM32F723IEK6 | 25 MHz  | OTG_FS/OTG_HS_Embed |
 | stm32767zi_nucleo| [stm32f767zi nucleo][767]   | STM32F767ZIT6 | 8 MHz   | OTG_FS              |
 
 [767]: https://www.st.com/en/evaluation-tools/nucleo-f767zi.html
 [723]: https://www.st.com/en/evaluation-tools/32f723ediscovery.html
-
+[407]: http://www.waveshare.net/wiki/EVK407I

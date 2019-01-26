@@ -125,6 +125,18 @@
 #define  RAM_START_ADDR   (0x20000000ul + APP_SIZE)
 #define  FLASH_SIZE   RAM_SIZE
 #define  RAM_SIM_MSC
+
+
+#elif defined(STM32F407xx)
+#define  RAM_SIZE   (128ul*1024ul)
+#define  FLASH_PAGE_SIZE   2048
+#define  PAGE_SIZE    FLASH_PAGE_SIZE
+#define  APP_SIZE        (16*1024ul)
+
+#define  RAM_START_ADDR   (0x20000000ul + APP_SIZE)
+#define  FLASH_SIZE   RAM_SIZE
+#define  RAM_SIM_MSC
+
 #endif
 
 #define  MSC_START_ADDR  (0x08000000ul + APP_SIZE)

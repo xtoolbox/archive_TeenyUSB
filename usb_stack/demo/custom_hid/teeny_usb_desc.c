@@ -1,7 +1,7 @@
 /*
  * Name   :  teeny_usb_desc.c
  * Author :  admin@xtoolbox.org
- * Date   :  2019-01-19 18:31:36
+ * Date   :  2019-01-13 21:20:14
  * Desc   :  This file is auto generate by the teeny_usb script tool
  *           Visit https://github.com/xtoolbox/TeenyUSB for more info
  */
@@ -36,10 +36,54 @@ return Device {
   0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
   0xC0               // End Collection
 ]]),
-            -- report = HID_InOut(64),
         },
    }
-}  
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--[==[
+USB_HID{
+    report = {
+    0x06, 0x00, 0xFF, 0x09, 0x01 ,0xA1, 0x01, 0x09, 
+    0x02, 0x15, 0x00, 0x25, 0xFF, 0x75, 0x08, 0x95,
+    0x40, 0x81, 0x02, 0x09, 0x03, 0x91, 0x02, 0xC0
+    }
+}
+            --[=[
+            report = HID_BuildReport([[
+  // report descriptor for general input/output
+  0x06, 0x00, 0xFF,  // Usage Page (Vendor Defined 0xFF00)
+  0x09, 0x01,        // Usage (0x01)
+  0xA1, 0x01,        // Collection (Application)
+  0x09, 0x02,        //   Usage (0x02)
+  0x15, 0x00,        //   Logical Minimum (0)
+  0x25, 0xFF,        //   Logical Maximum (255)
+  0x75, 0x08,        //   Report Size (8)
+  0x95, 0x40,        //   Report Count 64
+  0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+  0x09, 0x03,        //   Usage (0x03)
+  0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
+  0xC0               // End Collection
+]]),]=]
+report = {0x01,0x02,0x03,0x04},
+-- report = HID_InOut(64),
+]==]  
 
   ------------- lua script end   ------------
  */

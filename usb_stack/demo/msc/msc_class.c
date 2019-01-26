@@ -134,10 +134,12 @@ USBD_StatusTypeDef USBD_LL_StallEP(USBD_HandleTypeDef  *pdev, uint8_t ep)
 USBD_StatusTypeDef USBD_LL_Transmit(USBD_HandleTypeDef *pdev, uint8_t ep_addr, uint8_t *pbuf, uint16_t size)
 {
   tusb_device_t* dev = (tusb_device_t*)pdev->pData;
-  tusb_send_data(dev, ep_addr&0x7f, pbuf, size);
+  // MSC BOT protocol didn't need zero length packet
+  tusb_send_data(dev, ep_addr&0x7f, pbuf, size, 0);
   return USBD_OK;
 }
 
+__ALIGN_BEGIN uint32_t cmd_buf __ALIGN_END;
 void tusb_class_request(tusb_device_t* dev, tusb_setup_packet* setup_req)
 {
   USBD_HandleTypeDef* pdev = &hDev;
@@ -147,7 +149,8 @@ void tusb_class_request(tusb_device_t* dev, tusb_setup_packet* setup_req)
         (setup_req->wLength == 1) &&
       ((setup_req->bmRequestType & 0x80) == 0x80)){
         MSCData.max_lun = ((USBD_StorageTypeDef *)pdev->pUserData)->GetMaxLun();
-        tusb_send_data (dev, 0, &MSCData.max_lun,1);
+        cmd_buf = MSCData.max_lun;
+        tusb_control_send(dev, &cmd_buf,1);
       }
       break;
     case BOT_RESET :

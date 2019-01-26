@@ -22,9 +22,9 @@
  * SOFTWARE.
  */
 
-#include "teeny_usb_host.h"
+#include "teeny_usb.h"
 
-void delay_ms(uint32_t ms)
+void tusb_delay_ms(uint32_t ms)
 {
   uint32_t i,j;
   for(i=0;i<ms;++i)
@@ -35,26 +35,9 @@ void host_loop(tusb_host_t* host);
 
 int main(void)
 {
-#if defined(STM32F723xx)
-  tusb_host_t* host = tusb_get_host(1);
-  // Enable HS port power
-  __HAL_RCC_GPIOH_CLK_ENABLE();
-  GPIOH->MODER &= ~(GPIO_MODER_MODER0 << (12*2));
-  GPIOH->MODER |= (GPIO_MODER_MODER0_0 << (12*2));
-  GPIOH->BSRR = GPIO_PIN_12;
-#elif defined(STM32F767xx)
-  __HAL_RCC_GPIOG_CLK_ENABLE();
-  GPIOG->MODER &= ~(GPIO_MODER_MODER0 << (6*2));
-  GPIOG->MODER |= (GPIO_MODER_MODER0_0 << (6*2));
-  GPIOG->BSRR = GPIO_PIN_6;
-  tusb_host_t* host = tusb_get_host(0);
-#else
-  tusb_host_t* host = tusb_get_host(0);
-#endif
-  tusb_close_host(host);
-  delay_ms(100);
+  HOST_PORT_POWER_ON();
+  tusb_host_t* host = tusb_get_host(TEST_APP_USB_CORE);
   tusb_open_host(host);
-  delay_ms(200);
   while(1){
     host_loop(host);
   }

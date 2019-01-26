@@ -57,17 +57,13 @@ struct _usb_device{
   usb_device_t* children[MAX_CHILD]; // max 4 child
   uint16_t  config_len;
   uint8_t   addr;
-  uint8_t   is_low_speed : 1;
-  uint8_t   is_root :      1;
+  uint8_t   speed;
+  uint8_t   is_root;
 };
 
 
 usb_device_t* new_device(void);
 void free_device(usb_device_t* dev);
-
-
-void delay_ms(uint32_t ms);
-static control_pipe_t def_ctrl;
 
 #define   GetDeviceDesc(ctrl_pipe, data, len) \
   control_xfer(ctrl_pipe, \
@@ -191,37 +187,52 @@ int control_xfer(control_pipe_t* ctrl_pipe, uint8_t bmRequest, uint8_t bRequest,
   setup.wLength = len;
   tusb_pipe_setup(&ctrl_pipe->ctrl_out, &setup);
   // Setup packet never fail
-  if( tusb_pipe_wait(&ctrl_pipe->ctrl_out, 3000) != TUSB_CS_TRANSFER_COMPLETE){
+  if( tusb_pipe_wait(&ctrl_pipe->ctrl_out, 30000) != TUSB_CS_TRANSFER_COMPLETE){
     return -1;
   }
   
-  delay_ms(50);
+  tusb_delay_ms(500);
   if(len){
     if(bmRequest & 0x80){
       //Read data
       if(xfer_with_wait(&ctrl_pipe->ctrl_in, data, len) != 0){
-        return -1;
+        tusb_delay_ms(500);
+        if(xfer_with_wait(&ctrl_pipe->ctrl_in, data, len) != 0){
+          return -1;
+        }
       }
-      delay_ms(50);
+      tusb_delay_ms(50);
       // send status out packet
       if(xfer_with_wait(&ctrl_pipe->ctrl_out, 0, 0) != 0){
-        return -1;
+        tusb_delay_ms(500);
+        if(xfer_with_wait(&ctrl_pipe->ctrl_out, 0, 0) != 0){
+          return -1;
+        }
       }
     }else{
       // Write data
       if(xfer_with_wait(&ctrl_pipe->ctrl_out, data, len) != 0){
-        return -1;
+        tusb_delay_ms(500);
+        if(xfer_with_wait(&ctrl_pipe->ctrl_out, data, len) != 0){
+          return -1;
+        }
       }
-      delay_ms(50);
+      tusb_delay_ms(50);
       // recv the status in packet
       if(xfer_with_wait(&ctrl_pipe->ctrl_in, &setup, 0) != 0){
-        return -1;
+        tusb_delay_ms(500);
+        if(xfer_with_wait(&ctrl_pipe->ctrl_in, &setup, 0) != 0){
+          return -1;
+        }
       }
     }
   }else{
     // recv the status in packet
       if(xfer_with_wait(&ctrl_pipe->ctrl_in, &setup, 0) != 0){
-        return -1;
+        tusb_delay_ms(500);
+        if(xfer_with_wait(&ctrl_pipe->ctrl_in, &setup, 0) != 0){
+          return -1;
+        }
       }
   }
   return 0;
@@ -328,7 +339,13 @@ void hub_handle(usb_device_t* device)
                 usb_device_t* dev = new_device();
                 if(dev){
                   dev->is_root = 0;
-                  dev->is_low_speed = port_status.wPortStatus.PORT_LOW_SPEED;
+                  dev->speed = PORT_SPEED_FULL;
+                  if(port_status.wPortStatus.PORT_HIGH_SPEED){
+                    dev->speed = PORT_SPEED_HIGH;
+                  }
+                  if(port_status.wPortStatus.PORT_LOW_SPEED){
+                    dev->speed = PORT_SPEED_LOW;
+                  }
                   if(enum_device(device->host, dev) == 0){
                     usb_device_t* child = device->children[port-1];
                     if(child){
@@ -361,7 +378,12 @@ void hub_handle(usb_device_t* device)
   }
   
   if(state != TUSB_CS_XFER_ONGOING){
-    tusb_pipe_xfer_data(&device->itf.data_in, device->itf.in_buf, device->itf.in_len);
+    static __IO uint32_t tick = 0;
+    tick++;
+    if(tick>2000){
+      tick = 0;
+      tusb_pipe_xfer_data(&device->itf.data_in, device->itf.in_buf, device->itf.in_len);
+    }
   }
   
   for(int i=0;i<MAX_CHILD;i++){
@@ -410,12 +432,9 @@ static int open_ep(usb_device_t* device)
                           device->addr, 
                           ep->bEndpointAddress, 
                           ep->bmAttributes & EP_TYPE_MSK, 
-                          ep->wMaxPacketSize & 0x7ff) != 0){
+                          ep->wMaxPacketSize & 0x7ff,
+                          device->speed) != 0){
           goto open_ep_fail;
-        }
-        // device is not root, update the PIPE speed to real
-        if(!device->is_root){
-          tusb_pipe_update_speed(&device->itf.data_in, device->is_low_speed);
         }
         device->itf.in_len = ep->wMaxPacketSize & 0x7ff;
       }
@@ -427,7 +446,8 @@ static int open_ep(usb_device_t* device)
                           device->addr,
                           ep->bEndpointAddress,
                           ep->bmAttributes & EP_TYPE_MSK, 
-                          ep->wMaxPacketSize & 0x7ff) != 0){
+                          ep->wMaxPacketSize & 0x7ff,
+                          device->speed) != 0){
           goto open_ep_fail;
         }
         device->itf.out_len = ep->wMaxPacketSize & 0x7ff;
@@ -499,7 +519,7 @@ int init_hub(usb_device_t* device)
       goto hub_fail;
     }
   }
-  delay_ms(hubDesc.bPwrOn2PwrGood*2);
+  tusb_delay_ms(hubDesc.bPwrOn2PwrGood*2);
   
   tusb_pipe_xfer_data(&device->itf.data_in, device->itf.in_buf, device->itf.in_len);
   
@@ -531,42 +551,18 @@ itf_fail:
 // Enum device on default address, and return 0 when success
 int enum_device(tusb_host_t* host, usb_device_t* device)
 {
-  static uint8_t init = 0;
+  static control_pipe_t def_ctrl;
   static uint8_t addr = 1;
-  uint32_t retry = 0;
   device->host = host;
-  if(!init){
-    if( tusb_pipe_open(host, &def_ctrl.ctrl_out, 0, 0x00, EP_TYPE_CTRL, 8) == 0
-     && tusb_pipe_open(host, &def_ctrl.ctrl_in, 0, 0x80, EP_TYPE_CTRL, 8) == 0){
-       init = 1;
-     }
-  }
-  if(!init){
-    // fail to init default control pipe at default address
-    return -1;
+  if( tusb_pipe_open(host, &def_ctrl.ctrl_out, 0, 0x00, EP_TYPE_CTRL, 8, device->speed) == 0
+    && tusb_pipe_open(host, &def_ctrl.ctrl_in, 0, 0x80, EP_TYPE_CTRL, 8, device->speed) == 0){
+  }else{
+    goto dev_fail;
   }
   
-  if(!device->is_root){
-    tusb_pipe_update_speed(&def_ctrl.ctrl_in, device->is_low_speed);
-    tusb_pipe_update_speed(&def_ctrl.ctrl_out, device->is_low_speed);
-    // TODO, after enum done, change the default pipe speed back
+  if(GetDeviceDesc(&def_ctrl, device->device_desc, 8) != 0){
+    goto dev_fail;
   }
-#define  TRY( action, times )     \
-  do{                              \
-    retry = times;                  \
-    while( action != 0 && retry ){  \
-      retry--;                      \
-      delay_ms(200);                \
-    }                               \
-  }while(0)
-  
-  retry = GetDeviceDesc(&def_ctrl, device->device_desc, 8) == 0;
-  if(!retry)return -1;
-  
-  // get device descriptor
-  retry = GetDeviceDesc(&def_ctrl, device->device_desc, 18) == 0;
-  
-  if(!retry)return -1;
   
   device->addr = addr;
   addr++;
@@ -574,22 +570,17 @@ int enum_device(tusb_host_t* host, usb_device_t* device)
 
   // set device address
   if(SetAddress(&def_ctrl, device->addr) != 0){
-    return -1;
+    goto dev_fail;
   }
   
-  delay_ms(100);
+  tusb_delay_ms(100);
   
   // setup control pipe for device
-  if( tusb_pipe_open(host, &device->ctrl_pipe.ctrl_in, device->addr, 0x80, EP_TYPE_CTRL, device->device_desc[7]) == 0
-   && tusb_pipe_open(host, &device->ctrl_pipe.ctrl_out, device->addr, 0x00, EP_TYPE_CTRL, device->device_desc[7]) == 0){
+  if( tusb_pipe_open(host, &device->ctrl_pipe.ctrl_in, device->addr, 0x80, EP_TYPE_CTRL, device->device_desc[7], device->speed) == 0
+   && tusb_pipe_open(host, &device->ctrl_pipe.ctrl_out, device->addr, 0x00, EP_TYPE_CTRL, device->device_desc[7], device->speed) == 0){
   }else{
     // fail to open control pipe
     goto dev_fail;
-  }
-  // device is not root, update the PIPE speed to real
-  if(!device->is_root){
-    tusb_pipe_update_speed(&device->ctrl_pipe.ctrl_in, device->is_low_speed);
-    tusb_pipe_update_speed(&device->ctrl_pipe.ctrl_out, device->is_low_speed);
   }
   
   // Get config descriptor header
@@ -604,8 +595,7 @@ int enum_device(tusb_host_t* host, usb_device_t* device)
   }
 
   // get total config descriptor
-  retry = GetConfigDesc(&device->ctrl_pipe, device->config_desc, device->config_len) == 0;
-  if(!retry){
+  if( GetConfigDesc(&device->ctrl_pipe, device->config_desc, device->config_len) != 0){
     goto dev_fail;
   }
  
@@ -622,6 +612,9 @@ int enum_device(tusb_host_t* host, usb_device_t* device)
   return 0;
   
 dev_fail:
+  tusb_pipe_close(&def_ctrl.ctrl_out);
+  tusb_pipe_close(&def_ctrl.ctrl_in);
+  
   tusb_pipe_close(&device->ctrl_pipe.ctrl_in);
   tusb_pipe_close(&device->ctrl_pipe.ctrl_out);
   if(device->itf.deinit){
@@ -676,14 +669,15 @@ void host_loop(tusb_host_t* host)
 {
   if( host->state == TUSB_HOST_PORT_CONNECTED){
     // reset port
-    tusb_host_port_reset(host, 0, 1);
-    delay_ms(50);
-    tusb_host_port_reset(host, 0, 0);
-    delay_ms(100);
+    tusb_port_set_reset(host, 0, 1);
+    tusb_delay_ms(50);
+    tusb_port_set_reset(host, 0, 0);
+    tusb_delay_ms(100);
   }else if( host->state ==  TUSB_HOST_PORT_ENABLED ){
     if(!root){
       root = new_device();
       root->is_root = 1;
+      root->speed = tusb_port_get_speed(host, 0);
       if(enum_device(host, root) != 0){
         free_device(root);
         root = 0;

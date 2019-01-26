@@ -1,3 +1,4 @@
+echo off
 set DESC_PATH=%cd%
 set DESC_NAME=%1
 if "%DESC_NAME%"=="" (set "DESC_NAME=custom_bulk_desc.lua")
