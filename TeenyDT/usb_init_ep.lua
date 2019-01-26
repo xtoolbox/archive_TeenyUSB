@@ -135,33 +135,48 @@ local function getInitCode(epInfo)
         outCnt = dev.prefix .. "OTG_OUT_EP_NUM",
         ctrlCnt = dev.prefix .. "OTG_CONTROL_EP_NUM",
     }
-    local rxFifoSize = math.floor(  (epInfo.controlEpCount * 5 + 8) + 
-                                    (epInfo.maxOutSize / 4 + 1 )    +
-                                    (epInfo.outEpCount * 2) + 1       )
-    r = r .. "// RX FIFO size / 4 > (CONTROL_EP_NUM * 5 + 8) +  (MAX_OUT_SIZE / 4 + 1) + (OUT_EP_NUM*2) + 1 = "..rxFifoSize.."\n"
-    rxFifoSize = rxFifoSize * 4
-    if rxFifoSize < 256 then rxFifoSize = 256 end
-    r = r .. MACRO("OTG_RX_FIFO_SIZE",  rxFifoSize)
-    r = r .. MACRO("OTG_RX_FIFO_ADDR", 0 )
-    local fifoUsed = rxFifoSize 
-    local fifoRemain = epInfo.maxMem - fifoUsed
-    r = r .. "// Sum of IN ep max packet size is ".. totolInSize .. "\n"
-    r = r .. "// Remain Fifo size is ".. math.floor(fifoRemain) .. " in bytes, Rx Used "..fifoUsed.." bytes \n"
-    fifoRatio = math.floor(fifoRemain/totolInSize)
-    if fifoRemain < totolInSize then
-        warning("Remain FIFO("..fifoRemain..") is smaller than EP packet size("..totolInSize..")")
-        fifoRatio = 1
-    end
-    -- I don't know why the max count of fifo should <= 7 * EpMaxPkt
-    if fifoRatio > 7 then fifoRatio = 7 end
-    for i=0,epInfo.maxEp do
-        local ep = epInfo.usage[i]
-        if ep and ep.inSize then
-            r = r .. MACRO("EP" .. i .. "_TX_FIFO_ADDR", fifoUsed)
-            r = r .. MACRO("EP" .. i .. "_TX_FIFO_SIZE", "(" .. dev.prefix .. "EP"..i.."_TX_SIZE * " ..fifoRatio.. ")")
-            fifoUsed = fifoUsed + fifoRatio * ep.inSize
+    
+    for ttt=1,2 do
+        local post = ttt == 1 and "_FS" or "_HS"
+        
+        local epInfo_maxMem = ttt == 1 and 1280 or 4096
+        local rxFifoSize = math.floor(  (epInfo.controlEpCount * 5 + 8) + 
+                                        (epInfo.maxOutSize / 4 + 1 )    +
+                                        (epInfo.outEpCount * 2) + 1       )
+        r = r .. "// RX FIFO size / 4 > (CONTROL_EP_NUM * 5 + 8) +  (MAX_OUT_SIZE / 4 + 1) + (OUT_EP_NUM*2) + 1 = "..rxFifoSize.."\n"
+        rxFifoSize = rxFifoSize * 4
+        if ttt == 1 then
+            if rxFifoSize < 256 then rxFifoSize = 256 end
+        else
+            if rxFifoSize < 512 then rxFifoSize = 512 end
         end
+
+        r = r .. MACRO("OTG_RX_FIFO_SIZE"..post,  rxFifoSize)
+        r = r .. MACRO("OTG_RX_FIFO_ADDR"..post, 0 )
+        local fifoUsed = rxFifoSize 
+        local fifoRemain = epInfo_maxMem - fifoUsed
+        r = r .. "// Sum of IN ep max packet size is ".. totolInSize .. "\n"
+        r = r .. "// Remain Fifo size is ".. math.floor(fifoRemain) .. " in bytes, Rx Used "..fifoUsed.." bytes \n"
+        fifoRatio = math.floor(fifoRemain/totolInSize)
+        if fifoRemain < totolInSize then
+            warning("Remain FIFO("..fifoRemain..") is smaller than EP packet size("..totolInSize..")")
+            fifoRatio = 1
+        end
+        -- I don't know why the max count of fifo should <= 7 * EpMaxPkt
+        if fifoRatio > 7 then fifoRatio = 7 end
+        for i=0,epInfo.maxEp do
+            local ep = epInfo.usage[i]
+            if ep and ep.inSize then
+                r = r .. MACRO("EP" .. i .. "_TX_FIFO_ADDR"..post, fifoUsed)
+                r = r .. MACRO("EP" .. i .. "_TX_FIFO_SIZE"..post, "(" .. dev.prefix .. "EP"..i.."_TX_SIZE * " ..fifoRatio.. ")")
+                fifoUsed = fifoUsed + fifoRatio * ep.inSize
+            end
+        end
+    
     end
+    
+    
+    
     
     local txMax, rxMax = "",""
     for i = 0, #epSizeTable do
@@ -228,7 +243,8 @@ local function getInitCode(epInfo)
     r = r .. "\n// EndPoints init function for USB OTG core\n"
     r = r .. "#define "..dev.prefix.."TUSB_INIT_EP_OTG(dev) \\\n"
     r = r .. "  do{\\\n"
-    r = r .. "    SET_RX_FIFO(dev, "..dev.prefix.."OTG_RX_FIFO_ADDR, "..dev.prefix.."OTG_RX_FIFO_SIZE);  \\\n"
+    r = r .. "  if(GetUSB(dev) == USB_OTG_FS) { \\\n"
+    r = r .. "    SET_RX_FIFO(dev, "..dev.prefix.."OTG_RX_FIFO_ADDR_FS, "..dev.prefix.."OTG_RX_FIFO_SIZE_FS);  \\\n"
     for i=0,epInfo.maxEp do
         local ep = epInfo.usage[i]
         if ep then
@@ -236,13 +252,34 @@ local function getInitCode(epInfo)
         r = r .. gsub("    /* Init ep$n */ \\\n", t)
         if ep.inSize then
             r = r .. gsub("    INIT_EP_Tx(dev, PCD_ENDP$n, $EPn_TYPE, $EPn_TX_SIZE);  \\\n", t)
-            r = r .. gsub("    SET_TX_FIFO(dev, PCD_ENDP$n, $EPn_TX_FIFO_ADDR, $EPn_TX_FIFO_SIZE);  \\\n", t)
+            r = r .. gsub("    SET_TX_FIFO(dev, PCD_ENDP$n, $EPn_TX_FIFO_ADDR_FS, $EPn_TX_FIFO_SIZE_FS);  \\\n", t)
         end
         if ep.outSize then
             r = r .. gsub("    INIT_EP_Rx(dev, PCD_ENDP$n, $EPn_TYPE, $EPn_RX_SIZE);  \\\n", t)
         end
         end
     end
+    r = r .. "  } \\\n"
+    
+    r = r .. "  if(GetUSB(dev) == USB_OTG_HS) { \\\n"
+    r = r .. "    SET_RX_FIFO(dev, "..dev.prefix.."OTG_RX_FIFO_ADDR_HS, "..dev.prefix.."OTG_RX_FIFO_SIZE_HS);  \\\n"
+    for i=0,epInfo.maxEp do
+        local ep = epInfo.usage[i]
+        if ep then
+        local t = {n=i, EPn = dev.prefix .."EP"..i}
+        r = r .. gsub("    /* Init ep$n */ \\\n", t)
+        if ep.inSize then
+            r = r .. gsub("    INIT_EP_Tx(dev, PCD_ENDP$n, $EPn_TYPE, $EPn_TX_SIZE);  \\\n", t)
+            r = r .. gsub("    SET_TX_FIFO(dev, PCD_ENDP$n, $EPn_TX_FIFO_ADDR_HS, $EPn_TX_FIFO_SIZE_HS);  \\\n", t)
+        end
+        if ep.outSize then
+            r = r .. gsub("    INIT_EP_Rx(dev, PCD_ENDP$n, $EPn_TYPE, $EPn_RX_SIZE);  \\\n", t)
+        end
+        end
+    end
+    r = r .. "  } \\\n"
+    
+    
     r = r .. "  }while(0)\n\n"
     
     
