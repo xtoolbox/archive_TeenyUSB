@@ -140,10 +140,11 @@ USBD_StatusTypeDef USBD_LL_Transmit(USBD_HandleTypeDef *pdev, uint8_t ep_addr, u
 }
 
 __ALIGN_BEGIN uint32_t cmd_buf __ALIGN_END;
-void tusb_class_request(tusb_device_t* dev, tusb_setup_packet* setup_req)
+int tusb_class_request(tusb_device_t* dev, tusb_setup_packet* setup_req)
 {
   USBD_HandleTypeDef* pdev = &hDev;
-  switch (setup_req->bRequest){
+  if( (setup_req->bmRequestType & USB_REQ_TYPE_MASK) == USB_REQ_TYPE_CLASS){
+    switch (setup_req->bRequest){
     case BOT_GET_MAX_LUN :
       if((setup_req->wValue  == 0) && 
         (setup_req->wLength == 1) &&
@@ -152,13 +153,16 @@ void tusb_class_request(tusb_device_t* dev, tusb_setup_packet* setup_req)
         cmd_buf = MSCData.max_lun;
         tusb_control_send(dev, &cmd_buf,1);
       }
-      break;
+      return 1;
     case BOT_RESET :
       if((setup_req->wValue  == 0) && 
         (setup_req->wLength == 0) &&
       ((setup_req->bmRequestType & 0x80) != 0x80)){
          MSC_BOT_Reset(pdev);
       }
-      break;
+      tusb_send_status(dev);
+      return 1;
     }
+  }
+  return 0;
 }

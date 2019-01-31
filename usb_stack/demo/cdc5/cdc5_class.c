@@ -115,19 +115,24 @@ void CDC_DataoutRequest(tusb_device_t* dev)
   tusb_send_status(dev);
 }
 
-void tusb_class_request(tusb_device_t* dev, tusb_setup_packet* setup_req)
+int tusb_class_request(tusb_device_t* dev, tusb_setup_packet* setup_req)
 {
-  if(setup_req->wLength > 0){
-    if (setup_req->bmRequestType & 0x80){
-      VCP_Ctrl(setup_req->bRequest, cdc_cmd, setup_req->wLength);
-      tusb_control_send(dev, (uint16_t*)cdc_cmd, setup_req->wLength);
+  if( (setup_req->bRequest & USB_REQ_TYPE_MASK) == USB_REQ_TYPE_CLASS){
+    if(setup_req->wLength > 0){
+      if (setup_req->bmRequestType & 0x80){
+        VCP_Ctrl(setup_req->bRequest, cdc_cmd, setup_req->wLength);
+        tusb_control_send(dev, (uint16_t*)cdc_cmd, setup_req->wLength);
+        return 1;
+      }else{
+        tusb_set_recv_buffer(dev, 0, cdc_cmd, setup_req->wLength);
+        dev->ep0_rx_done = CDC_DataoutRequest;
+        return 1;
+      }
     }else{
-      tusb_set_recv_buffer(dev, 0, cdc_cmd, setup_req->wLength);
-      dev->ep0_rx_done = CDC_DataoutRequest;
-      //tusb_send_status(dev);
+      VCP_Ctrl(setup_req->bRequest, NULL, 0);
+      tusb_send_status(dev);
+      return 1;
     }
-  }else{
-    VCP_Ctrl(setup_req->bRequest, NULL, 0);
-    tusb_send_status(dev);
   }
+  return 0;
 }

@@ -82,15 +82,3 @@ int main(void)
   }
 }
 
-const uint8_t* tusb_get_report_descriptor(tusb_device_t* dev, tusb_setup_packet* req, uint16_t* len)
-{
-  uint16_t ifn = req->wIndex;
-  if(ifn<1){
-    *len = HID_REPORT_DESCRIPTOR_SIZE_IF0;
-    return HID_ReportDescriptor_if0;
-  }
-  *len = 0;
-  return 0;
-}
-
-
