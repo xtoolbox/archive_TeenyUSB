@@ -48,7 +48,7 @@ tusb_pipe_t pipe_write;
 tusb_pipe_t pipe_ctrl_in;
 tusb_pipe_t pipe_ctrl_out;
 
-__ALIGN_BEGIN uint8_t test_data[63] __ALIGN_END = {
+__ALIGN_BEGIN uint8_t test_data[1023] __ALIGN_END = {
   1,2,3,4,5,6,7,8, 1,2,3,4,5,6,7,8, 1,2,3,4,5,6,7,8,
 };
 
