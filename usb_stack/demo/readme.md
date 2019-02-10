@@ -9,6 +9,7 @@
 | msc              | 虚拟U盘 Mass Storage | All Below      |
 | custom_hid       | 自定义 HID 设备      | All Below      |
 | cdc5             | 5路 CDC              | All Below      |
+|cubemx_custom_bulk| 基于CubeMX的自定义设备| 723            |
 
 ## USB主机例程 Demo for host
 
