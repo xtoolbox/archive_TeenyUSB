@@ -1,7 +1,7 @@
 /*
  * Name   :  teeny_usb_init.h
  * Author :  admin@xtoolbox.org
- * Date   :  2019-01-26 21:55:36
+ * Date   :  2019-02-10 15:52:43
  * Desc   :  This file is auto generate by the teeny_usb script tool
  *           Visit https://github.com/xtoolbox/TeenyUSB for more info
  */
@@ -122,7 +122,8 @@ const uint8_t BULK_rxEpMaxSize[] = \
 
 
 // EndPoints init function for USB OTG core
-#define BULK_TUSB_INIT_EP_OTG(dev) \
+#if defined(USB_OTG_FS)
+#define BULK_TUSB_INIT_EP_OTG_FS(dev) \
   do{\
   if(GetUSB(dev) == USB_OTG_FS) { \
     SET_RX_FIFO(dev, BULK_OTG_RX_FIFO_ADDR_FS, BULK_OTG_RX_FIFO_SIZE_FS);  \
@@ -136,6 +137,16 @@ const uint8_t BULK_rxEpMaxSize[] = \
     /* Init ep2 */ \
     INIT_EP_Rx(dev, PCD_ENDP2, BULK_EP2_TYPE, BULK_EP2_RX_SIZE);  \
   } \
+  }while(0)
+
+#else  // USB_OTG_FS
+#define BULK_TUSB_INIT_EP_OTG_FS(dev) 
+
+#endif  // USB_OTG_FS
+
+#if defined(USB_OTG_HS)
+#define BULK_TUSB_INIT_EP_OTG_HS(dev) \
+  do{\
   if(GetUSB(dev) == USB_OTG_HS) { \
     SET_RX_FIFO(dev, BULK_OTG_RX_FIFO_ADDR_HS, BULK_OTG_RX_FIFO_SIZE_HS);  \
     /* Init ep0 */ \
@@ -148,6 +159,17 @@ const uint8_t BULK_rxEpMaxSize[] = \
     /* Init ep2 */ \
     INIT_EP_Rx(dev, PCD_ENDP2, BULK_EP2_TYPE, BULK_EP2_RX_SIZE);  \
   } \
+  }while(0)
+
+#else  // USB_OTG_HS
+#define BULK_TUSB_INIT_EP_OTG_HS(dev) 
+
+#endif // USB_OTG_HS
+
+#define BULK_TUSB_INIT_EP_OTG(dev) \
+  do{\
+    BULK_TUSB_INIT_EP_OTG_FS(dev); \
+    BULK_TUSB_INIT_EP_OTG_HS(dev); \
   }while(0)
 
 

@@ -1,7 +1,7 @@
 /*
  * Name   :  teeny_usb_init.h
  * Author :  admin@xtoolbox.org
- * Date   :  2019-01-26 21:55:25
+ * Date   :  2019-02-10 17:20:00
  * Desc   :  This file is auto generate by the teeny_usb script tool
  *           Visit https://github.com/xtoolbox/TeenyUSB for more info
  */
@@ -134,7 +134,8 @@ const uint8_t CDC_rxEpMaxSize[] = \
 
 
 // EndPoints init function for USB OTG core
-#define CDC_TUSB_INIT_EP_OTG(dev) \
+#if defined(USB_OTG_FS)
+#define CDC_TUSB_INIT_EP_OTG_FS(dev) \
   do{\
   if(GetUSB(dev) == USB_OTG_FS) { \
     SET_RX_FIFO(dev, CDC_OTG_RX_FIFO_ADDR_FS, CDC_OTG_RX_FIFO_SIZE_FS);  \
@@ -151,6 +152,16 @@ const uint8_t CDC_rxEpMaxSize[] = \
     INIT_EP_Tx(dev, PCD_ENDP3, CDC_EP3_TYPE, CDC_EP3_TX_SIZE);  \
     SET_TX_FIFO(dev, PCD_ENDP3, CDC_EP3_TX_FIFO_ADDR_FS, CDC_EP3_TX_FIFO_SIZE_FS);  \
   } \
+  }while(0)
+
+#else  // USB_OTG_FS
+#define CDC_TUSB_INIT_EP_OTG_FS(dev) 
+
+#endif  // USB_OTG_FS
+
+#if defined(USB_OTG_HS)
+#define CDC_TUSB_INIT_EP_OTG_HS(dev) \
+  do{\
   if(GetUSB(dev) == USB_OTG_HS) { \
     SET_RX_FIFO(dev, CDC_OTG_RX_FIFO_ADDR_HS, CDC_OTG_RX_FIFO_SIZE_HS);  \
     /* Init ep0 */ \
@@ -166,6 +177,17 @@ const uint8_t CDC_rxEpMaxSize[] = \
     INIT_EP_Tx(dev, PCD_ENDP3, CDC_EP3_TYPE, CDC_EP3_TX_SIZE);  \
     SET_TX_FIFO(dev, PCD_ENDP3, CDC_EP3_TX_FIFO_ADDR_HS, CDC_EP3_TX_FIFO_SIZE_HS);  \
   } \
+  }while(0)
+
+#else  // USB_OTG_HS
+#define CDC_TUSB_INIT_EP_OTG_HS(dev) 
+
+#endif // USB_OTG_HS
+
+#define CDC_TUSB_INIT_EP_OTG(dev) \
+  do{\
+    CDC_TUSB_INIT_EP_OTG_FS(dev); \
+    CDC_TUSB_INIT_EP_OTG_HS(dev); \
   }while(0)
 
 
