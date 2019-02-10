@@ -241,7 +241,8 @@ local function getInitCode(epInfo)
     
     
     r = r .. "\n// EndPoints init function for USB OTG core\n"
-    r = r .. "#define "..dev.prefix.."TUSB_INIT_EP_OTG(dev) \\\n"
+    r = r .. "#if defined(USB_OTG_FS)\n"
+    r = r .. "#define "..dev.prefix.."TUSB_INIT_EP_OTG_FS(dev) \\\n"
     r = r .. "  do{\\\n"
     r = r .. "  if(GetUSB(dev) == USB_OTG_FS) { \\\n"
     r = r .. "    SET_RX_FIFO(dev, "..dev.prefix.."OTG_RX_FIFO_ADDR_FS, "..dev.prefix.."OTG_RX_FIFO_SIZE_FS);  \\\n"
@@ -260,7 +261,15 @@ local function getInitCode(epInfo)
         end
     end
     r = r .. "  } \\\n"
-    
+    r = r .. "  }while(0)\n\n"
+    r = r .. "#else  // USB_OTG_FS\n"
+    r = r .. "#define "..dev.prefix.."TUSB_INIT_EP_OTG_FS(dev) \n\n"
+    r = r .. "#endif  // USB_OTG_FS\n"
+    r = r .. "\n"
+
+    r = r .. "#if defined(USB_OTG_HS)\n"
+    r = r .. "#define "..dev.prefix.."TUSB_INIT_EP_OTG_HS(dev) \\\n"
+    r = r .. "  do{\\\n"
     r = r .. "  if(GetUSB(dev) == USB_OTG_HS) { \\\n"
     r = r .. "    SET_RX_FIFO(dev, "..dev.prefix.."OTG_RX_FIFO_ADDR_HS, "..dev.prefix.."OTG_RX_FIFO_SIZE_HS);  \\\n"
     for i=0,epInfo.maxEp do
@@ -278,10 +287,19 @@ local function getInitCode(epInfo)
         end
     end
     r = r .. "  } \\\n"
-    
-    
     r = r .. "  }while(0)\n\n"
+    r = r .. "#else  // USB_OTG_HS\n"
+    r = r .. "#define "..dev.prefix.."TUSB_INIT_EP_OTG_HS(dev) \n\n"
+    r = r .. "#endif // USB_OTG_HS\n"
+    r = r .. "\n"
     
+    r = r .. "#define "..dev.prefix.."TUSB_INIT_EP_OTG(dev) \\\n"
+    r = r .. "  do{\\\n"
+    r = r .. "    " .. dev.prefix.."TUSB_INIT_EP_OTG_FS(dev); \\\n"
+    r = r .. "    " .. dev.prefix.."TUSB_INIT_EP_OTG_HS(dev); \\\n"
+    r = r .. "  }while(0)\n\n"
+
+
     
     r = r .. "\n"
     r = r .. "#if defined(USB)\n"
