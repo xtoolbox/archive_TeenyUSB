@@ -20,6 +20,15 @@
 | host_raw         | 无协议栈主机 Raw Host| F723/F767       |
 | host_input       | HUB+KeyBoard+Mouse   | F723/F767       |
 
+## USB主机从机例程 Demo for OTG
+| Demo Folder      |      Demo Type       |  Tested Board  |
+|------------------|----------------------|----------------|
+| host_rtt         | OTG under rtthread   | [stm32f723e_disco][723] |
+
+接入普通USB线时，工作在设备模式，FS设备默认为CDC串口，HS设备默认为U盘，使用板载QSPI，可以通过命令行更改设备角色，重新插拔后生效。
+
+接入OTG线时，工作在主机模式，主机采用修改后的rtthread USB主机协议栈，目前支持HUB，U盘，键盘和鼠标。
+
 
 ## Demo测试用的开发板 Demo tested on boards
 
