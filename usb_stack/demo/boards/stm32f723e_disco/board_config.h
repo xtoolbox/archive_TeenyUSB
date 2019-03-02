@@ -59,13 +59,32 @@
 
 #define  TEST_APP_USB_CORE          USB_CORE_ID_HS
 
-#define  HOST_PORT_POWER_ON() \
+#if defined(USE_RTTHREAD)
+#include <rtthread.h>
+#define RTOS_INTERRUPT_ENTER()  rt_interrupt_enter()
+#define RTOS_INTERRUPT_LEAVE()  rt_interrupt_leave()
+
+#endif
+
+#define  HOST_PORT_POWER_ON_HS() \
 do{\
   __HAL_RCC_GPIOH_CLK_ENABLE();\
   GPIOH->MODER &= ~(GPIO_MODER_MODER0 << (12*2));\
   GPIOH->MODER |= (GPIO_MODER_MODER0_0 << (12*2));\
   GPIOH->BSRR = GPIO_PIN_12;\
 }while(0)
+
+#define  HOST_PORT_POWER_ON_FS() \
+do{\
+  __HAL_RCC_GPIOG_CLK_ENABLE();\
+  GPIOG->MODER &= ~(GPIO_MODER_MODER0 << (8*2));\
+  GPIOG->MODER |= (GPIO_MODER_MODER0_0 << (8*2));\
+  GPIOG->BRR = GPIO_PIN_8;\
+}while(0)
+
+
+
+#define  HOST_PORT_POWER_ON()  HOST_PORT_POWER_ON_HS()
 
 
 #endif
