@@ -32,7 +32,7 @@
  * SOFTWARE.
  */
 
-#include "teeny_usb_host.h"
+#include "teeny_usb.h"
 #include "desc_def.h"
 #include "string.h"
 

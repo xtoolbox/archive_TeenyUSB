@@ -32,7 +32,7 @@
  * SOFTWARE.
  */
 
-#include "teeny_usb_host.h"
+#include "teeny_usb.h"
 
 #define  READ_EP  0x81
 #define  WRITE_EP 0x02
@@ -58,7 +58,7 @@ tusb_pipe_t pipe_write;
 tusb_pipe_t pipe_ctrl_in;
 tusb_pipe_t pipe_ctrl_out;
 
-__ALIGN_BEGIN uint8_t test_data[1023] __ALIGN_END = {
+__ALIGN_BEGIN uint8_t test_data[4095] __ALIGN_END = {
   1,2,3,4,5,6,7,8, 1,2,3,4,5,6,7,8, 1,2,3,4,5,6,7,8,
 };
 
@@ -76,7 +76,7 @@ int main(void)
   uint8_t speed;
   tusb_host_t* host = tusb_get_host(TEST_APP_USB_CORE);
   HOST_PORT_POWER_ON();
-  
+  test_data[4094] = 0x11;
   tusb_open_host(host);
   while(1){
     if(state == TUSB_HOST_PORT_CONNECTED){
@@ -109,7 +109,9 @@ int main(void)
       tusb_pipe_open(host, &pipe_write, 0, WRITE_EP, EP_TYPE_BULK, EP_MPS, speed);
       tusb_pipe_xfer_data(&pipe_write, test_data, sizeof(test_data));
       tusb_pipe_wait(&pipe_write, 0xffffffff);
-
+      
+      tusb_delay_ms(2000);
+      
       // Recv test data
       tusb_pipe_open(host, &pipe_read, 0, READ_EP, EP_TYPE_BULK, EP_MPS, speed);
       tusb_pipe_xfer_data(&pipe_read, buf, sizeof(buf));
