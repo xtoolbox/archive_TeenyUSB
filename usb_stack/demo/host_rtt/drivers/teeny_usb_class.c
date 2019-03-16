@@ -321,7 +321,7 @@ static int rt_usb_class_init(void)
   rt_thread_t tid;
   rt_event_init(&usb_class_event, "evt_cls", RT_IPC_FLAG_FIFO);
   
-  tid = rt_thread_create("usb_cls", usb_class_thread_entry, RT_NULL, 1024, 4, 5);
+  tid = rt_thread_create("usbd", usb_class_thread_entry, RT_NULL, 1024, 4, 5);
   RT_ASSERT(tid != RT_NULL);
   rt_thread_startup(tid);
   list_udev();

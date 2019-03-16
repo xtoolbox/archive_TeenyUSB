@@ -63,14 +63,13 @@ static rt_err_t drv_reset_port(uhcd_t hcd, rt_uint8_t port)
 static struct rt_completion urb_completion;
 int tusb_on_channel_event(tusb_host_t* host, uint8_t hc_num)
 {
-  //tusb_hc_data_t* hc = &host->hc[hc_num];
+  tusb_hc_data_t* hc = &host->hc[hc_num];
   //upipe_t pipe = (upipe_t)hc->user_data;
-  rt_completion_done(&urb_completion);
+  if(hc->xfer_done){
+    rt_completion_done(&urb_completion);
+  }
   return 0;
 }
-
-static rt_thread_t host_thread = RT_NULL;
-
 
 static int drv_pipe_xfer(upipe_t pipe, rt_uint8_t token, void *buffer, int nbytes, int timeout)
 {
@@ -85,6 +84,9 @@ static int drv_pipe_xfer(upipe_t pipe, rt_uint8_t token, void *buffer, int nbyte
   rt_err_t err = rt_completion_wait(&urb_completion, timeout);
   if(hc->state == TUSB_CS_TRANSFER_COMPLETE){
     return nbytes;
+  }else if(hc->state == TUSB_CS_STALL){
+    pipe->status = UPIPE_STATUS_STALL;
+    return -RT_EIO;
   }
   return err;
 }

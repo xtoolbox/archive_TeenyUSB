@@ -135,7 +135,7 @@ void EXTI15_10_IRQHandler(void)
 }
 
 /* the system main thread */
-void usb_thread_entry(void *parameter)
+void usb_otg_thread_entry(void *parameter)
 {
   rt_uint32_t e;
   while (1){
@@ -188,7 +188,7 @@ static int rt_hw_usb_init(void)
   change_otg_mode(otg_hs, (OTG_HS_ID_PORT->IDR & OTG_HS_ID_PIN) == 0);
   
   
-  tid = rt_thread_create("usb_glb", usb_thread_entry, RT_NULL, 1024, 2, 5);
+  tid = rt_thread_create("usbotg", usb_otg_thread_entry, RT_NULL, 1024, 2, 5);
   RT_ASSERT(tid != RT_NULL);
   
   rt_thread_startup(tid);
