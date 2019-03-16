@@ -37,6 +37,8 @@ extern void rt_hw_board_init(void);
 
 #define   OTG_FS_ID_PIN     GPIO_PIN_10
 #define   OTG_FS_ID_PORT    GPIOA
+#define   OTG_FS_VBUS_PIN   GPIO_PIN_9
+#define   OTG_FS_VBUS_PORT  GPIOA
 #define   OTG_FS_PWR_PORT   GPIOG
 #define   OTG_FS_PWR_PIN    GPIO_PIN_8
 #define   OTG_FS_PWR_ON()   do{ GPIOG->BSRR = GPIO_PIN_8<<16;  }while(0)
@@ -45,6 +47,8 @@ extern void rt_hw_board_init(void);
 
 #define   OTG_HS_ID_PIN     GPIO_PIN_12
 #define   OTG_HS_ID_PORT    GPIOB
+#define   OTG_HS_VBUS_PIN   GPIO_PIN_13
+#define   OTG_HS_VBUS_PORT  GPIOB
 #define   OTG_HS_PWR_PORT   GPIOH
 #define   OTG_HS_PWR_PIN    GPIO_PIN_12
 #define   OTG_HS_PWR_ON()   do{ GPIOH->BSRR = GPIO_PIN_12;  }while(0)

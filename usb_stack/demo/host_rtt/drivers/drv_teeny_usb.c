@@ -87,13 +87,20 @@ static void otg_in_line_init(void)
   __HAL_RCC_GPIOH_CLK_ENABLE();
 
   /* Configure PA.10 pin as input floating */
-  GPIO_InitStructure.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStructure.Mode = GPIO_MODE_INPUT;
   GPIO_InitStructure.Pull = GPIO_PULLUP;
   GPIO_InitStructure.Pin = OTG_FS_ID_PIN;
   HAL_GPIO_Init(OTG_FS_ID_PORT, &GPIO_InitStructure);
   
   GPIO_InitStructure.Pin = OTG_HS_ID_PIN;
   HAL_GPIO_Init(OTG_HS_ID_PORT, &GPIO_InitStructure);
+  
+  GPIO_InitStructure.Pull = GPIO_PULLDOWN;
+  GPIO_InitStructure.Pin = OTG_FS_VBUS_PIN;
+  HAL_GPIO_Init(OTG_FS_VBUS_PORT, &GPIO_InitStructure);
+  
+  GPIO_InitStructure.Pin = OTG_HS_VBUS_PIN;
+  HAL_GPIO_Init(OTG_HS_VBUS_PORT, &GPIO_InitStructure);
   
   GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStructure.Pull = GPIO_PULLUP;
@@ -102,82 +109,76 @@ static void otg_in_line_init(void)
   
   GPIO_InitStructure.Pin = OTG_HS_PWR_PIN;
   HAL_GPIO_Init(OTG_HS_PWR_PORT, &GPIO_InitStructure);
-  
-  /* Enable and set EXTI line 0 Interrupt to the lowest priority */
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 2, 0);
-  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
-}
-
-
-static struct rt_event usb_event;
-
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-  if (GPIO_Pin == USB_EVT_FS_ID){
-    rt_event_send(&usb_event, USB_EVT_FS_ID);
-  }else if(GPIO_Pin == USB_EVT_HS_ID){
-    rt_event_send(&usb_event, USB_EVT_HS_ID);
-  }
-}
-
-void EXTI15_10_IRQHandler(void)
-{
-  rt_interrupt_enter();
-  if(__HAL_GPIO_EXTI_GET_IT(OTG_FS_ID_PIN) != RESET){
-    __HAL_GPIO_EXTI_CLEAR_IT(OTG_FS_ID_PIN);
-    rt_event_send(&usb_event, USB_EVT_FS_ID);
-  }
-  if(__HAL_GPIO_EXTI_GET_IT(OTG_HS_ID_PIN) != RESET){
-    __HAL_GPIO_EXTI_CLEAR_IT(OTG_HS_ID_PIN);
-    rt_event_send(&usb_event, USB_EVT_HS_ID);
-  }
-  rt_interrupt_leave();
 }
 
 /* the system main thread */
 void usb_otg_thread_entry(void *parameter)
 {
-  rt_uint32_t e;
+#define USB_DEBOUNCE_TIEM  4
+  static rt_uint8_t fs_host_cnt = 0;
+  static rt_uint8_t fs_device_cnt = 0;
+  static rt_uint8_t hs_host_cnt = 0;
+  static rt_uint8_t hs_device_cnt = 0;
   while (1){
-    if (rt_event_recv(&usb_event, USB_EVT_ALL ,
-      RT_EVENT_FLAG_OR | RT_EVENT_FLAG_CLEAR,
-    RT_WAITING_FOREVER, &e) == RT_EOK)
-    {
-      if(e & USB_EVT_FS_ID){
-        //if(OTG_FS_ID_PORT->IDR & OTG_FS_ID_PIN){
-        //  rt_kprintf("OTG FS id changed to device mode\n");
-        //}else{
-        //  rt_kprintf("OTG FS id changed to host mode\n");
-        //}
-        change_otg_mode(otg_fs, (OTG_FS_ID_PORT->IDR & OTG_FS_ID_PIN) == 0);
+    if((OTG_FS_ID_PORT->IDR & OTG_FS_ID_PIN) == 0){
+      fs_device_cnt = 0;
+      if(fs_host_cnt<=USB_DEBOUNCE_TIEM){
+        fs_host_cnt++;
+        if(fs_host_cnt>USB_DEBOUNCE_TIEM){
+          change_otg_mode(otg_fs, 1);
+        }
       }
-      if(e & USB_EVT_HS_ID){
-        //if(OTG_HS_ID_PORT->IDR & OTG_HS_ID_PIN){
-        //  rt_kprintf("OTG HS id changed to device mode\n");
-        //}else{
-        //  rt_kprintf("OTG HS id changed to host mode\n");
-        //}
-        change_otg_mode(otg_hs, (OTG_HS_ID_PORT->IDR & OTG_HS_ID_PIN) == 0);
+    }else{
+      fs_host_cnt = 0;
+      if(OTG_FS_VBUS_PORT->IDR & OTG_FS_VBUS_PIN){
+        if(fs_device_cnt<=USB_DEBOUNCE_TIEM){
+          fs_device_cnt++;
+          if(fs_device_cnt>USB_DEBOUNCE_TIEM){
+            change_otg_mode(otg_fs, 0);
+          }
+        }
+      }else{
+        fs_device_cnt = 0;
       }
     }
+    if((OTG_HS_ID_PORT->IDR & OTG_HS_ID_PIN) == 0){
+      hs_device_cnt = 0;
+      if(hs_host_cnt<=USB_DEBOUNCE_TIEM){
+        hs_host_cnt++;
+        if(hs_host_cnt>USB_DEBOUNCE_TIEM){
+          change_otg_mode(otg_hs, 1);
+        }
+      }
+    }else{
+      hs_host_cnt = 0;
+      if(OTG_HS_VBUS_PORT->IDR & OTG_HS_VBUS_PIN){
+        if(hs_device_cnt<=USB_DEBOUNCE_TIEM){
+          hs_device_cnt++;
+          if(hs_device_cnt>USB_DEBOUNCE_TIEM){
+            change_otg_mode(otg_hs, 0);
+          }
+        }
+      }else{
+        hs_device_cnt = 0;
+      }
+    }
+    rt_thread_mdelay(50);
   }
 }
 
 static int rt_hw_usb_init(void)
 {
   rt_thread_t tid;
-  
-  
-  rt_event_init(&usb_event, "evt_glb", RT_IPC_FLAG_FIFO);
   otg_in_line_init();
-  
+  OTG_FS_PWR_OFF();
+  OTG_HS_PWR_OFF();
   otg_fs = tusb_get_otg(USB_CORE_ID_FS);
   if(otg_fs){
     rt_kprintf("Get OTG FS success\n");
   }else{
     rt_kprintf("Get OTG FS fail\n");
   }
-  change_otg_mode(otg_fs, (OTG_FS_ID_PORT->IDR & OTG_FS_ID_PIN) == 0);
+  //change_otg_mode(otg_fs, (OTG_FS_ID_PORT->IDR & OTG_FS_ID_PIN) == 0);
   
   otg_hs = tusb_get_otg(USB_CORE_ID_HS);
   if(otg_hs){
@@ -185,8 +186,7 @@ static int rt_hw_usb_init(void)
   }else{
     rt_kprintf("Get OTG HS fail\n");
   }
-  change_otg_mode(otg_hs, (OTG_HS_ID_PORT->IDR & OTG_HS_ID_PIN) == 0);
-  
+  //change_otg_mode(otg_hs, (OTG_HS_ID_PORT->IDR & OTG_HS_ID_PIN) == 0);
   
   tid = rt_thread_create("usbotg", usb_otg_thread_entry, RT_NULL, 1024, 2, 5);
   RT_ASSERT(tid != RT_NULL);
