@@ -39,44 +39,48 @@
 #include "usbd_msc.h"
 
 
+static struct rt_messagequeue *usbd_mq;
+typedef void(* device_handler_t)(tusb_device_t*);
+
+typedef struct udevice_msg{
+  device_handler_t handler;
+  tusb_device_t* device;
+}udevice_msg_t;
+
+rt_err_t rt_usbd_post(tusb_device_t* dev, device_handler_t h)
+{
+    udevice_msg_t msg = {
+      .handler = h,
+      .device = dev
+    };
+    rt_mq_send(usbd_mq, (void*)&msg, sizeof(udevice_msg_t));
+    return RT_EOK;
+}
+
+static void usb_device_thread_entry(void *parameter)
+{
+  while(1){
+    udevice_msg_t msg;
+    /* receive message */
+    if(rt_mq_recv(usbd_mq, &msg, sizeof(udevice_msg_t), RT_WAITING_FOREVER) 
+      != RT_EOK ) continue;
+    if(msg.handler)
+      msg.handler(msg.device);
+  }
+}
+
 typedef struct
 {
-  uint8_t  ep_rx;
-  uint8_t  ep_tx;
   void(*reconfig)(tusb_device_t* dev);
   int (*class_request)(tusb_device_t* dev, tusb_setup_packet* setup);
   void (*in_data)(tusb_device_t* dev, uint8_t EPn);
   int (*out_data)(tusb_device_t* dev, uint8_t EPn, const void* data, uint32_t len);
-  void* rx_buf;
-  uint32_t rx_size;
+  void*  class_data;
 }device_data_t;
-
-void init_hal_msc_class(tusb_device_t* dev);
-int tusb_msc_class_request(tusb_device_t* dev, tusb_setup_packet* setup_req);
-void msc_in_data(void);
-void msc_out_data(void);
-
-int tusb_cdc_class_request(tusb_device_t* dev, tusb_setup_packet* setup_req);
-
 
 void tusb_delay_ms(uint32_t ms)
 {
   rt_thread_delay(ms * 1000 / RT_TICK_PER_SECOND);
-}
-
-void config_as_msc(tusb_device_t* dev)
-{
-  //device_data_t* dev_data = (device_data_t*)dev->user_data;
-  MSC_TUSB_INIT(dev);
-  init_hal_msc_class(dev);
-}
-
-void config_as_cdc(tusb_device_t* dev)
-{
-  device_data_t* dev_data = (device_data_t*)dev->user_data;
-  CDC_TUSB_INIT(dev);
-  tusb_set_recv_buffer(dev, dev_data->ep_rx, dev_data->rx_buf, dev_data->rx_size);
-  tusb_set_rx_valid(dev, dev_data->ep_rx);
 }
 
 void tusb_on_tx_done(tusb_device_t* dev, uint8_t EPn)
@@ -115,32 +119,37 @@ int tusb_class_request(tusb_device_t* dev, tusb_setup_packet* setup)
 }
 
 
-#define EVT_MSC_IN   (1<<1)
-#define EVT_MSC_OUT  (1<<2)
-#define EVT_CDC_IN   (1<<3)
-#define EVT_CDC_OUT  (1<<4)
+void init_hal_msc_class(tusb_device_t* dev);
+int tusb_msc_class_request(tusb_device_t* dev, tusb_setup_packet* setup_req);
+void msc_in_data(tusb_device_t* dev);
+void msc_out_data(tusb_device_t* dev);
+int tusb_cdc_class_request(tusb_device_t* dev, tusb_setup_packet* setup_req);
 
-static struct rt_event usb_class_event;
+void config_as_msc(tusb_device_t* dev)
+{
+  //device_data_t* dev_data = (device_data_t*)dev->user_data;
+  MSC_TUSB_INIT(dev);
+  init_hal_msc_class(dev);
+}
+
 
 void msc_class_in_data(tusb_device_t* dev, uint8_t EPn)
 {
   if(EPn == (MSC_EPIN_ADDR & 0x7f) ){
-    rt_event_send(&usb_class_event, EVT_MSC_IN);
+    rt_usbd_post(dev, msc_in_data);
   }
 }
 
 int msc_class_out_data(tusb_device_t* dev, uint8_t EPn, const void* data, uint32_t len)
 {
   if(EPn == (MSC_EPOUT_ADDR & 0x7f) ){
-    rt_event_send(&usb_class_event, EVT_MSC_OUT);
+    rt_usbd_post(dev, msc_out_data);
     return 1;
   }
   return 0;
 }
 
 static device_data_t  msc_data = {
-  MSC_EPOUT_ADDR,
-  MSC_EPIN_ADDR,
   config_as_msc,
   tusb_msc_class_request,
   msc_class_in_data,
@@ -153,10 +162,34 @@ static device_data_t  msc_data = {
 
 static __IO uint32_t data_cnt = 0;
 static uint8_t cdc_buffer[1024];
+
+void config_as_cdc(tusb_device_t* dev)
+{
+  CDC_TUSB_INIT(dev);
+  tusb_set_recv_buffer(dev, RX_EP, cdc_buffer, sizeof(cdc_buffer));
+  tusb_set_rx_valid(dev, RX_EP);
+}
+
+void cdc_set_rx_valid(tusb_device_t* dev)
+{
+  tusb_set_rx_valid(dev, RX_EP);
+}
+
 void cdc_in_data(tusb_device_t* dev, uint8_t EPn)
 {
   if(EPn == TX_EP){
-    rt_event_send(&usb_class_event, EVT_CDC_IN);
+    rt_usbd_post(dev, cdc_set_rx_valid);
+  }
+}
+
+void cdc_send_data(tusb_device_t* dev)
+{
+  if(data_cnt){
+    for(int i=0;i<data_cnt;i++){
+      cdc_buffer[i]++;
+    }
+    tusb_send_data(dev, TX_EP, cdc_buffer, data_cnt, TUSB_TXF_ZLP);
+    data_cnt = 0; 
   }
 }
 
@@ -164,72 +197,28 @@ int cdc_out_data(tusb_device_t* dev, uint8_t EPn, const void* data, uint32_t len
 {
   if(EPn == RX_EP){
     data_cnt = len;
-    rt_event_send(&usb_class_event, EVT_CDC_OUT);
+    rt_usbd_post(dev, cdc_send_data);
     return len;
   }
   return 0;
 }
 
 static device_data_t  cdc_data = {
-  RX_EP,
-  TX_EP,
   config_as_cdc,
   tusb_cdc_class_request,
   cdc_in_data,
   cdc_out_data,
-  cdc_buffer,
-  sizeof(cdc_buffer)
 };
 
-static tusb_device_t* msc_dev;
-static tusb_device_t* cdc_dev;
 void device_msc_init(tusb_device_t* dev)
 {
-  msc_dev = dev;
-  (void)msc_dev;
   dev->user_data = &msc_data;
 }
 
 void device_cdc_init(tusb_device_t* dev)
 {
-  cdc_dev = dev;
   dev->user_data = &cdc_data;
 }
-
-
-
-#define  EVT_CLS_ALL   (EVT_MSC_IN | EVT_MSC_OUT | EVT_CDC_IN | EVT_CDC_OUT)
-
-static void usb_class_thread_entry(void *parameter)
-{
-  rt_uint32_t e;
-  while (1){
-    if (rt_event_recv(&usb_class_event, EVT_CLS_ALL ,
-      RT_EVENT_FLAG_OR | RT_EVENT_FLAG_CLEAR,
-    RT_WAITING_FOREVER, &e) == RT_EOK)
-    {
-      if(e & EVT_MSC_IN){
-        msc_in_data();
-      }
-      if(e & EVT_MSC_OUT){
-        msc_out_data();
-      }
-      if(e & EVT_CDC_IN){
-        tusb_set_rx_valid(cdc_dev, RX_EP);
-      }
-      if(e & EVT_CDC_OUT){
-        if(data_cnt){
-          for(int i=0;i<data_cnt;i++){
-            cdc_buffer[i]++;
-          }
-          tusb_send_data(cdc_dev, TX_EP, cdc_buffer, data_cnt, TUSB_TXF_ZLP);
-          data_cnt = 0; 
-        }
-      }
-    }
-  }
-}
-
 
 #define UDEV_CDC   0
 #define UDEV_MSC   1
@@ -319,9 +308,9 @@ void list_udev(void)
 static int rt_usb_class_init(void)
 {
   rt_thread_t tid;
-  rt_event_init(&usb_class_event, "evt_cls", RT_IPC_FLAG_FIFO);
+  usbd_mq = rt_mq_create("usbd", sizeof(udevice_msg_t), 16, RT_IPC_FLAG_FIFO);
   
-  tid = rt_thread_create("usbd", usb_class_thread_entry, RT_NULL, 1024, 4, 5);
+  tid = rt_thread_create("usbd", usb_device_thread_entry, RT_NULL, 1024, 4, 5);
   RT_ASSERT(tid != RT_NULL);
   rt_thread_startup(tid);
   list_udev();

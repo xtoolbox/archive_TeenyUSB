@@ -39,13 +39,15 @@ USBD_HandleTypeDef  hDev;
 
 extern USBD_StorageTypeDef USBD_Storage_Interface_fops_FS;
 
-void msc_in_data(void)
+void msc_in_data(tusb_device_t* dev)
 {
+  (void)dev;
   MSC_BOT_DataIn(&hDev, MSC_EPIN_ADDR);
 }
 
-void msc_out_data(void)
+void msc_out_data(tusb_device_t* dev)
 {
+  (void)dev;
   MSC_BOT_DataOut(&hDev, MSC_EPOUT_ADDR);
 }
 
