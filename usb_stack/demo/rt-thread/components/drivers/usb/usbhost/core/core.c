@@ -270,7 +270,10 @@ rt_err_t rt_usbh_detach_instance(uinst_t device)
         rt_kprintf("no usb instance to detach\n");
         return -RT_ERROR;
     }
-    
+    if(device->status == DEV_STATUS_IDLE){
+      // already detached
+      return RT_EOK;
+    }
     /* free configration descriptor */
     if (device->cfg_desc) {
         for (i = 0; i < device->cfg_desc->bNumInterfaces; i++)
