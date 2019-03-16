@@ -361,7 +361,8 @@ rt_err_t rt_udisk_run(struct uhintf* intf)
                 data->part.offset = 0;
                 data->part.size   = 0;
                 data->intf = intf;
-                data->part.lock = rt_sem_create("sem_ud", 1, RT_IPC_FLAG_FIFO);
+                rt_snprintf(sname, 8, "semud%d",  data->udisk_id);
+                data->part.lock = rt_sem_create(sname, 1, RT_IPC_FLAG_FIFO);
 
                 rt_snprintf(dname, 7, "udisk%d", data->udisk_id);
                 rt_snprintf(mount_name, 16, UDISK_MOUNT_NAME_FORMAT, data->udisk_id);

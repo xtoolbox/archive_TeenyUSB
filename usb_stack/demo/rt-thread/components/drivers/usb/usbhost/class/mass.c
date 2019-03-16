@@ -447,7 +447,7 @@ rt_err_t rt_usbh_storage_inquiry(struct uhintf* intf, rt_uint8_t* buffer)
     cmd.xfer_len = 36;
     cmd.dflags = CBWFLAGS_DIR_IN;
     cmd.lun = 0;
-    cmd.cb_len = 6;//12
+    cmd.cb_len = 10;//6;//12
     cmd.cb[0] = SCSI_INQUIRY_CMD;
     cmd.cb[4] = 36;
 
