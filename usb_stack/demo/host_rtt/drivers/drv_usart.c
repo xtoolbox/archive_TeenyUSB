@@ -124,7 +124,7 @@ static int drv_getc(struct rt_serial_device *serial)
     return ch;
 }
 
-static const struct rt_uart_ops drv_uart_ops =
+static struct rt_uart_ops drv_uart_ops =
 {
     drv_configure,
     drv_control,
@@ -440,6 +440,85 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef *uartHandle)
     }
 }
 
+// a pseudo shell input device 
+static struct rt_device sh_input;
+static struct rt_semaphore sh_input_lock;
+
+static rt_err_t sh_in_init(rt_device_t dev)
+{
+	if (rt_sem_init(&sh_input_lock, "shinlk", 1, RT_IPC_FLAG_FIFO) != RT_EOK)
+	{
+		rt_kprintf("init sh input lock semaphore failed\n");
+	}
+	else
+  {
+		rt_kprintf("Sh input init OK\n");
+  }
+	return RT_EOK;
+}
+
+static rt_err_t sh_in_open(rt_device_t dev, rt_uint16_t oflag)
+{
+	return RT_EOK;
+}
+
+static rt_err_t sh_in_close(rt_device_t dev)
+{
+	return RT_EOK;
+}
+static rt_size_t sh_in_read(rt_device_t dev, rt_off_t pos, void* buffer, rt_size_t size)
+{
+	return 0;
+}
+
+static const char* sh_in_buffer;
+static __IO int  sh_in_remain;
+static int sh_in_get_ch(struct rt_serial_device *serial)
+{
+  if(sh_in_remain>0){
+    sh_in_remain--;
+    return *sh_in_buffer++;
+  }
+  return -1;
+}
+static int (*get_ch_bak)(struct rt_serial_device *serial);
+
+static rt_size_t sh_in_write (rt_device_t dev, rt_off_t pos, const void* buffer, rt_size_t size)
+{
+  rt_sem_take(&sh_input_lock, RT_WAITING_FOREVER);
+  get_ch_bak = drv_uart_ops.getc;
+  drv_uart_ops.getc = sh_in_get_ch;
+  sh_in_remain = size;
+  sh_in_buffer = (const char*)buffer;
+  while(sh_in_remain>0){
+#if defined(BSP_USING_UART6)
+    rt_hw_serial_isr(&serial6, RT_SERIAL_EVENT_RX_IND);
+#endif
+  }
+  drv_uart_ops.getc = get_ch_bak;
+  rt_sem_release(&sh_input_lock);
+  return size;
+}
+
+static rt_err_t sh_in_control(rt_device_t dev, int cmd, void *args){return RT_EOK;}
+
+int sh_input_init(void)
+{
+  /* register sdcard device */
+  sh_input.type  = RT_Device_Class_Char;
+  sh_input.init 	= sh_in_init;
+  sh_input.open 	= sh_in_open;
+  sh_input.close = sh_in_close;
+  sh_input.read 	= sh_in_read;
+  sh_input.write = sh_in_write;
+  sh_input.control = sh_in_control;
+  
+		rt_device_register(&sh_input, "sh_in",
+			RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_REMOVABLE);
+    rt_device_open(&sh_input, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_STREAM);
+		return RT_EOK;
+}
+
 int hw_usart_init(void)
 {
     struct drv_uart *uart;
@@ -499,6 +578,8 @@ int hw_usart_init(void)
                           RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
                           uart);
 #endif /* BSP_USING_UART7 */
+
+    sh_input_init();
     return 0;
 }
 INIT_BOARD_EXPORT(hw_usart_init);

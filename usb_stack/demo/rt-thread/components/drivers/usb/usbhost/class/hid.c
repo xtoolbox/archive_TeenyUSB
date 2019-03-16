@@ -223,7 +223,7 @@ static void rt_usbh_hid_callback(upipe_t context)
     hid = (struct uhid*)pipe->intf->instance;
 
     /* invoke protocol callback function */
-    hid->protocol->callback((void*)hid);
+    hid->protocol->callback(pipe->intf);
 
     /* parameter check */
      RT_ASSERT(pipe->intf->device->hcd != RT_NULL);

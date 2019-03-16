@@ -40,7 +40,8 @@ static rt_err_t rt_usbh_hid_mouse_callback(struct uhintf* arg)
     rt_uint16_t xoffset=0;
     rt_uint16_t yoffset=0;
 #endif
-    hid = (struct uhid*)arg;
+    struct uhintf* intf = (struct uhintf*)arg;
+    hid = (struct uhid*)intf->instance;
 
     RT_DEBUG_LOG(RT_DEBUG_USB, ("hid 0x%x 0x%x\n",
                                 *(rt_uint32_t*)hid->buffer,
