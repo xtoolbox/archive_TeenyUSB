@@ -36,6 +36,7 @@
 #include <rtdevice.h>
 #include "board.h"
 #include "teeny_usb.h"
+#include "hid.h"
 
 void tusb_host_port_changed(tusb_host_t* host, uint8_t port, host_port_state_t new_state)
 {
@@ -191,3 +192,60 @@ void deinit_host(const char* name)
   }
 }
 
+const char* GetIntfName(struct uhintf* intf)
+{
+  if(intf->intf_desc->bInterfaceClass == USB_CLASS_HUB){
+    return "HUB";
+  }else if(intf->intf_desc->bInterfaceClass == USB_CLASS_MASS_STORAGE){
+    return "Mass storage";
+  }else if(intf->intf_desc->bInterfaceClass == USB_CLASS_HID){
+    if(intf->intf_desc->bInterfaceProtocol == USB_HID_KEYBOARD){
+      return "USB HID Keyboard";
+    }else if(intf->intf_desc->bInterfaceProtocol == USB_HID_MOUSE){
+      return "USB HID Mouse";
+    }
+    return "General USB HID device";
+  }
+  return "Unknown device type";
+}
+
+static void list_hub(uhub_t hub, const char* name)
+{
+  for(int i=0;i<USB_HUB_PORT_NUM;i++){
+    uinst_t dev = hub->child[i];
+    if(dev && dev->status != DEV_STATUS_IDLE){
+      for(int j=0;j<USB_MAX_INTERFACE;j++){
+        struct uhintf* intf = dev->intf[j];
+        if(intf){
+          const char* intfName = GetIntfName(intf);
+          rt_kprintf("BUS %s  Device %2d  VID: %04x PID: %04x Intf %d: %s\n", name, dev->address, dev->dev_desc.idVendor, dev->dev_desc.idProduct, j, intfName);
+          if(intf->intf_desc->bInterfaceClass == USB_CLASS_HUB){
+            list_hub((uhub_t)intf->instance, name);
+          }
+        }
+      }
+    }
+  }
+}
+
+static long list_usb_bus(const char* name)
+{
+  uhcd_t uhc = (uhcd_t)rt_device_find(name);
+  if(uhc == RT_NULL)return 0;
+  rt_kprintf("USB Bus %s\n", name);
+  uhub_t hub = uhc->roothub;
+  if(hub){
+    list_hub(hub, name);
+  }
+  return 0;
+}
+
+long lsusb(void)
+{
+  list_usb_bus("usbh_fs");
+  list_usb_bus("usbh_hs");
+  return 0;
+}
+
+FINSH_FUNCTION_EXPORT(lsusb, list usb device in system);
+MSH_CMD_EXPORT(lsusb, list usb device in system);
