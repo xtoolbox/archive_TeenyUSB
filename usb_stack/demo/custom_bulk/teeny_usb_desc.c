@@ -1,7 +1,7 @@
 /*
  * Name   :  teeny_usb_desc.c
  * Author :  admin@xtoolbox.org
- * Date   :  2019-02-10 15:52:43
+ * Date   :  2019-09-13 20:54:04
  * Desc   :  This file is auto generate by the teeny_usb script tool
  *           Visit https://github.com/xtoolbox/TeenyUSB for more info
  */
@@ -204,8 +204,9 @@ WEAK __ALIGN_BEGIN const uint8_t BULK_WCIDDescriptor [40] __ALIGN_END = {
     0,0,0,0,0,0,                                  /* Reserved */
 };
 
-#define  BULK_WCID_PROPERTIES_SIZE  (142)
-WEAK __ALIGN_BEGIN const uint8_t BULK_WCIDProperties [142] __ALIGN_END = {
+
+#define  BULK__IF0_WCID_PROPERTIES_SIZE  (142)
+WEAK __ALIGN_BEGIN const uint8_t BULK__IF0_WCIDProperties [142] __ALIGN_END = {
     0x8e, 0x00, 0x00, 0x00,                       /* dwLength */
     0x00, 0x01,                                   /* bcdVersion */
     0x05, 0x00,                                   /* wIndex */
@@ -236,6 +237,12 @@ WEAK __ALIGN_BEGIN const uint8_t BULK_WCIDProperties [142] __ALIGN_END = {
 };
 
 
+#define BULK_WCID_PROPERTIES_SIZE (1)
+WEAK __ALIGN_BEGIN const desc_t BULK_WCIDProperties[ BULK_WCID_PROPERTIES_SIZE ] __ALIGN_END = {
+BULK__IF0_WCIDProperties,
+
+};
+
 #endif
 
 //  Device descriptors
@@ -258,6 +265,22 @@ const tusb_descriptors BULK_descriptors = {
 #endif // BULK_WCID_PROPERTIES_SIZE
 
 #endif // HAS_WCID
+
+#if defined(HAS_WCID_20)
+#if defined(BULK_WCID_BOS_SIZE)
+  .wcid_bos = BULK_WCIDBOS,
+#else
+  .wcid_bos = 0,  
+#endif // BULK_WCID_BOS_SIZE)
+
+#if defined(BULK_WCID_DESC_SET_SIZE)
+  .wcid_desc_set = BULK_WCIDDescriptorSet,
+#else
+  .wcid_desc_set = 0,  
+#endif // BULK_WCID_DESC_SET_SIZE
+
+
+#endif // HAS_WCID_20
 };
 
 

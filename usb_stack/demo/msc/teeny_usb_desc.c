@@ -1,7 +1,7 @@
 /*
  * Name   :  teeny_usb_desc.c
  * Author :  admin@xtoolbox.org
- * Date   :  2019-02-10 17:20:15
+ * Date   :  2019-09-13 20:56:40
  * Desc   :  This file is auto generate by the teeny_usb script tool
  *           Visit https://github.com/xtoolbox/TeenyUSB for more info
  */
@@ -177,6 +177,22 @@ const tusb_descriptors MSC_descriptors = {
 #endif // MSC_WCID_PROPERTIES_SIZE
 
 #endif // HAS_WCID
+
+#if defined(HAS_WCID_20)
+#if defined(MSC_WCID_BOS_SIZE)
+  .wcid_bos = MSC_WCIDBOS,
+#else
+  .wcid_bos = 0,  
+#endif // MSC_WCID_BOS_SIZE)
+
+#if defined(MSC_WCID_DESC_SET_SIZE)
+  .wcid_desc_set = MSC_WCIDDescriptorSet,
+#else
+  .wcid_desc_set = 0,  
+#endif // MSC_WCID_DESC_SET_SIZE
+
+
+#endif // HAS_WCID_20
 };
 
 
