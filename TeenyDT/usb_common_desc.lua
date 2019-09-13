@@ -161,6 +161,22 @@ const tusb_descriptors ]]..desc.prefix..[[descriptors = {
 #endif // ]]..desc.prefix..[[WCID_PROPERTIES_SIZE
 
 #endif // HAS_WCID
+
+#if defined(HAS_WCID_20)
+#if defined(]]..desc.prefix..[[WCID_BOS_SIZE)
+  .wcid_bos = ]]..desc.prefix..[[WCIDBOS,
+#else
+  .wcid_bos = 0,  
+#endif // ]]..desc.prefix..[[WCID_BOS_SIZE)
+
+#if defined(]]..desc.prefix..[[WCID_DESC_SET_SIZE)
+  .wcid_desc_set = ]]..desc.prefix..[[WCIDDescriptorSet,
+#else
+  .wcid_desc_set = 0,  
+#endif // ]]..desc.prefix..[[WCID_DESC_SET_SIZE
+
+
+#endif // HAS_WCID_20
 };
 ]]
         
@@ -293,6 +309,7 @@ function IAD(param)
                 {iFunction              = 0                              },
     }(param)
     desc.WCID = param.WCID
+    desc.GUID = param.GUID
     desc.outputHeader = "  /* IAD descriptor */\n"
     desc.outputTail = ""
     return desc
@@ -319,6 +336,7 @@ function Interface(param)
         {iInterface               = 0                            },
     }(param)
     desc.WCID = param.WCID
+    desc.GUID = param.GUID
     desc.wTotalLength = epLength + desc.bLength
     desc.outputHeader = desc.ident .. "/* Interface descriptor, len: "..desc.wTotalLength.."*/\n"
     desc.outputTail = function(desc)

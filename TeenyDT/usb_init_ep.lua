@@ -387,15 +387,24 @@ local function getInitCode(epInfo)
     r = r .. "// Enable iso ep related code\n"
     r = r .. "#define  HAS_ISO_EP\n\n\n"
     end
-    if dev.hasWCID then
+    
+    if dev.hasWCID or dev.hasWCID_20 then
     r = r .. "// Enable WCID related code\n"
+    if dev.hasWCID then
     r = r .. "#define  HAS_WCID\n\n\n"
+    end
+    if dev.hasWCID_20 then
+    r = r .. "// Microsoft OS 2.0 Descriptors, since Win8.1\n"
+    r = r .. "#define  HAS_WCID_20\n\n\n"
+    end
+    
     r = r .. "#ifndef WCID_VENDOR_CODE\n"
     r = r .. "#define  WCID_VENDOR_CODE       0x17\n"
     r = r .. "extern const uint8_t WCID_StringDescriptor_MSOS[];\n"
     r = r .. "#endif\n\n"
     r = r .. "// Descriptor declare\n"
     end
+    
     r = r .. (dev.declare or "") .. "\n\n"
     return r
 end
