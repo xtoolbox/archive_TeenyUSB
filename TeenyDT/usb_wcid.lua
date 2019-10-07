@@ -592,7 +592,6 @@ end
 function MakeWCID(dev)
     local hasWCID = false
     local features = {}
-    local guids = {}
     local wcidInfo = {}
     for i,cfg in ipairs(dev) do
         for j,iad_or_if in ipairs(cfg) do
@@ -600,7 +599,6 @@ function MakeWCID(dev)
                 if iad_or_if.WCID then
                     features[#features+1] = iad_or_if.WCID(iad_or_if.bFirstInterface())
                     local gid = iad_or_if.GUID or GUID( "seed" .. dev.vid .. dev.pid .. iad_or_if.iFunction)
-                    guids[#guids+1] = gid
                     wcidInfo[#wcidInfo+1] = {
                         guid = gid,
                         interfaceId = iad_or_if.bFirstInterface()
@@ -611,7 +609,6 @@ function MakeWCID(dev)
                 if iad_or_if.WCID then
                     features[#features+1] = iad_or_if.WCID(iad_or_if.bInterfaceNumber)
                     local gid = iad_or_if.GUID or GUID( "seed" .. dev.vid .. dev.pid .. iad_or_if.iInterface)
-                    guids[#guids+1] = gid
                     wcidInfo[#wcidInfo+1] = {
                         guid = gid,
                         interfaceId = iad_or_if.bInterfaceNumber
@@ -643,18 +640,27 @@ function MakeWCID(dev)
         
         local props = ""
         local fields = ""
-        for i, guid in ipairs(guids) do
+        local last_interfaceId = 0
+        for i, v in ipairs(wcidInfo) do
+            local guid = v.guid
             local wcidProperties = WCIDProperties{WCIDDeviceIfGUID(guid)}
-            wcidProperties.prefix = dev.prefix .. "_IF" .. (i-1) .. "_"
+            wcidProperties.prefix = dev.prefix .. "_IF" .. (v.interfaceId) .. "_"
             props = props .. "\n"  .. tostring(wcidProperties) .. "\n"
-            fields = fields .. dev.prefix .. "_IF" .. (i-1) .. "_" .. "WCIDProperties,\n"
+            while last_interfaceId < v.interfaceId do
+                fields = fields .. "0,    // No WCID in Interface " .. last_interfaceId .."\n"
+                last_interfaceId = last_interfaceId + 1
+            end
+            fields = fields .. dev.prefix .. "_IF" .. (v.interfaceId) .. "_" .. "WCIDProperties,\n"
+            last_interfaceId = last_interfaceId + 1
         end
-        props = props .. "#define " .. dev.prefix .. "WCID_PROPERTIES_SIZE (" .. #guids .. ")\n"
+        while last_interfaceId< dev[1].bNumInterfaces do
+            fields = fields .. "0,    // No WCID in Interface " .. last_interfaceId .."\n"
+            last_interfaceId = last_interfaceId + 1
+        end
+        props = props .. "#define " .. dev.prefix .. "WCID_PROPERTIES_SIZE (" .. (last_interfaceId+1) .. ")\n"
         props = props .. "WEAK __ALIGN_BEGIN const desc_t " .. dev.prefix .. "WCIDProperties[ " .. dev.prefix .. "WCID_PROPERTIES_SIZE ] __ALIGN_END = {\n"
          .. fields .. "\n};\n"
         
-        local wcidProperties = WCIDProperties{WCIDDeviceIfGUID(guids)}
-        wcidProperties.prefix = dev.prefix
         return "\n\n#if defined(HAS_WCID)\n"
         .. r .. tostring(wcidFeature) .. props .. "\n"
         .. "#endif\n\n"

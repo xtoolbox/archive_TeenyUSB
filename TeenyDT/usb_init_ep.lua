@@ -466,7 +466,7 @@ function EndPointInfo(deviceDescriptor, maxEp, maxMem)
                     ep.type = maybeEp.bmAttributes
                     ep.doubleBuffer = maybeEp.doubleBuffer
                     if ep.inSize and ep.outSize then
-                        if ep.doubleBuffer then warning("Double buffer will disabled in BiDirection ep" .. i) end
+                        if ep.doubleBuffer then warning("Double buffer will disabled in BiDirection ep" .. ep.addr) end
                         ep.doubleBuffer = false
                     end
                     if ep.type == ISO then
